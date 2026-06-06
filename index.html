@@ -14,22 +14,20 @@
     
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">
-          <!-- Building / Key icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 0V5a3 3 0 0 0-6 0v2m6 0h6m0 0V5a3 3 0 0 1 6 0v2m-6 0v1a3 3 0 0 1-6 0V7m6 0a3 3 0 0 0 6 0V7"></path>
-            <path d="M4 21V10m16 11V10M9 21v-4a3 3 0 0 1 6 0v4"></path>
-          </svg>
-        </div>
-        <div class="sidebar-title-container">
-          <div style="display:flex; align-items:center;">
-            <span class="sidebar-title">Contract Rates</span>
-            <span id="cloud-badge" class="badge" style="font-size: 8px; padding: 1px 4px; margin-left: 6px; background:rgba(6, 182, 212, 0.2); color:#22d3ee; display:none; border:1px solid rgba(6,182,212,0.3); font-weight:700;">Cloud</span>
-          </div>
-          <span class="sidebar-subtitle">Hotel Tracker v1.0</span>
-        </div>
-      </div>
+            <div class="sidebar-header" style="display: flex; flex-direction: column; align-items: center; padding: 25px 15px 15px 15px; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <!-- กรอบวงกลมสีขาว ขนาดกำลังดี ล้อมรอบโลโก้ -->
+                <div class="sidebar-logo" style="display: flex; align-items: center; justify-content: center; background-color: #ffffff; width: 85px; height: 85px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+                    <img src="giftbox-logo.png" alt="Giftbox Travel Logo" style="height: 80px; width: 80px; object-fit: contain;">
+                </div>
+                
+                <div class="sidebar-title-container" style="text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <span class="sidebar-title" style="font-weight: 600; font-size: 16px;">Contract Rates</span>
+                        <span id="cloud-badge" class="badge badge-info" style="font-size: 9px; padding: 2px 4px; margin-left: 6px; background: rgba(6, 182, 212, 0.2); color: #22d3ee;">Cloud</span>
+                    </div>
+                    <span class="sidebar-subtitle" style="font-size: 11px; opacity: 0.5; display: block; margin-top: 2px;">Hotel Tracker v1.0</span>
+                </div>
+            </div>
       
       <ul class="sidebar-menu">
         <li class="menu-item active" data-target="page-dashboard">
