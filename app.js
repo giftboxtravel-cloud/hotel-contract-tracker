@@ -1483,11 +1483,14 @@ window.viewHotelDetails = function(hotelId) {
         dotColor = 'warning';
         statusBadge = `<span class="badge badge-warning">ใกล้หมดอายุ</span>`;
       }
-      
       const fileLink = contract.fileData 
-        ? `<button class="btn btn-secondary btn-icon" onclick="downloadBase64File('${contract.fileData}', '${contract.fileName}')" title="ดาวน์โหลดไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg></button>`
-        : `<span style="font-size:11px;color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
-        
+            ? `<button class="btn btn-secondary btn-icon" onclick="viewOrDownloadFile(this)" data-file="${contract.fileData}" data-name="${contract.fileName || 'contract'}" title="คลิกเพื่อเปิดดูไฟล์สัญญา">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+               </button>`
+            : `<span style="font-size:11px; color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
       const item = document.createElement('div');
       item.className = 'contract-timeline-item';
       item.innerHTML = `
@@ -1757,3 +1760,38 @@ function formatDateThai(dateStr) {
   
   return `${day} ${month} ${year}`;
 }
+// ฟังก์ชันเปิดพรีวิวไฟล์เวอร์ชันเสถียรที่สุด (วางไว้ล่างสุดของไฟล์ app.js)
+window.viewOrDownloadFile = function(buttonElement) {
+    try {
+        // ดึงข้อมูลจาก Data Attributes ของปุ่มที่ถูกคลิก
+        const base64Data = buttonElement.getAttribute('data-file');
+        const fileName = buttonElement.getAttribute('data-name');
+        
+        if (!base64Data) return;
+
+        const extension = fileName.split('.').pop().toLowerCase();
+        let mimeType = 'application/octet-stream';
+        
+        if (extension === 'pdf') {
+            mimeType = 'application/pdf';
+        } else if (extension === 'jpg' || extension === 'jpeg') {
+            mimeType = 'image/jpeg';
+        } else if (extension === 'png') {
+            mimeType = 'image/png';
+        }
+
+        const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+        const fileURL = URL.createObjectURL(blob);
+
+        window.open(fileURL, '_blank');
+    } catch (error) {
+        console.error('Error opening file:', error);
+        alert('ไม่สามารถเปิดไฟล์ได้ กรุณาลองใหม่อีกครั้ง');
+    }
+};
