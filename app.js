@@ -502,8 +502,8 @@ function renderDashboard() {
       const tr = document.createElement('tr');
       
       const starText = '★'.repeat(hotel.stars);
-      const mainRateText = rates.activeMainRate ? `${rates.activeMainRate.toLocaleString()} บาท` : `<span style="color:var(--text-muted);">ไม่มีสัญญาหลัก</span>`;
-      const promoRateText = rates.activePromoRate ? `${rates.activePromoRate.toLocaleString()} บาท` : `<span style="color:var(--text-muted);">-</span>`;
+      const mainRateText = rates.activeMainRate ? `${Number(rates.activeMainRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท` : '-';
+      const promoRateText = rates.activePromoRate ? `${Number(rates.activePromoRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท` : '-';
       
       const promoBadge = hasPromoActive 
         ? `<span class="badge badge-success">มีโปรโมชั่น</span>` 
@@ -647,10 +647,10 @@ function renderHotelsList() {
     const rates = getHotelActiveRates(hotel.id);
     let activeContractText = '';
     if (rates.activeMainRate) {
-      activeContractText += `<div style="font-weight:600;">Main: ${rates.activeMainRate.toLocaleString()} บ.</div>`;
+      activeContractText += `<div style="font-weight:600;">Main: ${Number(rates.activeMainRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</div>`;
     }
     if (rates.activePromoRate) {
-      activeContractText += `<div style="color:var(--accent-blue);font-weight:600;">Promo: ${rates.activePromoRate.toLocaleString()} บ.</div>`;
+      activeContractText += `<div style="color:var(--accent-blue);font-weight:600;">Promo: ${Number(rates.activePromoRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</div>`;
     }
     if (!activeContractText) {
       activeContractText = '<span style="color:var(--text-muted);">ไม่มีสัญญาแอคทีฟ</span>';
@@ -832,43 +832,43 @@ function renderPriceAnalytics() {
   }
   
   // Metrics calculation
-  const cheapestItem = analysisData[0];
-  const expensiveItem = analysisData[analysisData.length - 1];
-  
-  const cheapestPrice = cheapestItem.price;
-  const expensivePrice = expensiveItem.price;
-  
-  const sumPrice = analysisData.reduce((sum, item) => sum + item.price, 0);
-  const avgPrice = Math.round(sumPrice / analysisData.length);
-  
-  document.getElementById('analysis-cheapest-hotel').textContent = cheapestItem.hotel.name;
-  document.getElementById('analysis-cheapest-price').textContent = `${cheapestPrice.toLocaleString()} บาท`;
-  document.getElementById('analysis-expensive-hotel').textContent = expensiveItem.hotel.name;
-  document.getElementById('analysis-expensive-price').textContent = `${expensivePrice.toLocaleString()} บาท`;
-  document.getElementById('analysis-average-price').textContent = `${avgPrice.toLocaleString()} บาท`;
-  document.getElementById('analysis-hotel-count').textContent = `จากทั้งหมด ${analysisData.length} โรงแรมที่มีราคาแอคทีฟ`;
-  
-  // Render Comparison Table rows
-  analysisData.forEach(item => {
-    const tr = document.createElement('tr');
-    const priceDiff = item.price - cheapestPrice;
-    
-    let diffText = '';
-    if (priceDiff === 0) {
-      diffText = `<span style="color:var(--color-success); font-weight:600;">ต่ำสุด</span>`;
-    } else {
-      diffText = `<span style="color:var(--color-warning);">+${priceDiff.toLocaleString()} บาท</span>`;
-    }
-    
-    tr.innerHTML = `
-      <td class="hotel-name-cell">${item.hotel.name}</td>
-      <td>${'★'.repeat(item.hotel.stars)}</td>
-      <td style="font-weight:600;">${item.price.toLocaleString()} บ.</td>
-      <td>${diffText}</td>
-      <td><span class="badge ${item.priceType === 'Promo' ? 'badge-info' : 'badge-success'}">${item.statusText}</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
+    const cheapestItem = analysisData[0];
+    const expensiveItem = analysisData[analysisData.length - 1];
+
+    const cheapestPrice = cheapestItem.price;
+    const expensivePrice = expensiveItem.price;
+
+    const sumPrice = analysisData.reduce((sum, item) => sum + item.price, 0);
+    const avgPrice = Math.round(sumPrice / analysisData.length);
+
+    document.getElementById('analysis-cheapest-hotel').textContent = cheapestItem.hotel.name;
+    document.getElementById('analysis-cheapest-price').textContent = `${Number(cheapestPrice).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
+    document.getElementById('analysis-expensive-hotel').textContent = expensiveItem.hotel.name;
+    document.getElementById('analysis-expensive-price').textContent = `${Number(expensivePrice).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
+    document.getElementById('analysis-average-price').textContent = `${Number(avgPrice).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
+    document.getElementById('analysis-hotel-count').textContent = `จากทั้งหมด ${analysisData.length} โรงแรมที่มีราคาแอคทีฟ`;
+
+    // Render Comparison Table rows
+    analysisData.forEach(item => {
+        const tr = document.createElement('tr');
+        const priceDiff = item.price - cheapestPrice;
+
+        let diffText = '';
+        if (priceDiff === 0) {
+            diffText = `<span style="color:var(--color-success); font-weight:600;">ต่ำสุด</span>`;
+        } else {
+            diffText = `<span style="color:var(--color-warning);">+${Number(priceDiff).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</span>`;
+        }
+
+        tr.innerHTML = `
+            <td class="hotel-name-cell">${item.hotel.name}</td>
+            <td>${'★'.repeat(item.hotel.stars)}</td>
+            <td style="font-weight:600;">${Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</td>
+            <td>${diffText}</td>
+            <td><span class="badge ${item.priceType === 'Promo' ? 'badge-info' : 'badge-success'}">${item.statusText}</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
   
   // Render Custom SVG-based Bar Chart (responsive)
   const maxVal = expensivePrice > 0 ? expensivePrice : 1;
@@ -877,8 +877,8 @@ function renderPriceAnalytics() {
   const yAxisDiv = document.createElement('div');
   yAxisDiv.className = 'chart-y-axis';
   yAxisDiv.innerHTML = `
-    <div>${maxVal.toLocaleString()} บ.</div>
-    <div>${Math.round(maxVal / 2).toLocaleString()} บ.</div>
+    <div>${Number(maxVal).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</div>
+    <div>${Number(maxVal / 2).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</div>
     <div>0 บ.</div>
   `;
   chartContainer.appendChild(yAxisDiv);
@@ -907,7 +907,7 @@ function renderPriceAnalytics() {
     else if (item.price === expensivePrice) barClass = 'expensive';
     
     wrapper.innerHTML = `
-      <span class="chart-bar-value">${item.price.toLocaleString()}</span>
+      <span class="chart-bar-value">${Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
       <div class="chart-bar ${barClass}" style="height:${barHeight}px;" title="${item.hotel.name}: ${item.price} บาท"></div>
       <span class="chart-bar-label" title="${item.hotel.name}">${item.hotel.name}</span>
     `;
@@ -1177,7 +1177,7 @@ function initFormListeners() {
     
     const hotelId = document.getElementById('contract-hotel-id').value;
     const type = document.getElementById('contract-type').value;
-    const rate = parseInt(document.getElementById('contract-rate').value);
+    const rate = parseFloat(document.getElementById('contract-rate').value);
     const startDate = document.getElementById('contract-start').value;
     const endDate = document.getElementById('contract-end').value;
     
@@ -1501,7 +1501,7 @@ window.viewHotelDetails = function(hotelId) {
             ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
           </div>
           <div class="contract-timeline-rate">
-            ราคาห้องเริ่มต้น: ${contract.baseRate.toLocaleString()} บาท
+            ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
           </div>
           <div class="contract-timeline-actions">
             ${fileLink}
