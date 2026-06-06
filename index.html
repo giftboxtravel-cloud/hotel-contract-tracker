@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Contract Rate Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Supabase client CDN library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <!-- Building / Key icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 0V5a3 3 0 0 0-6 0v2m6 0h6m0 0V5a3 3 0 0 1 6 0v2m-6 0v1a3 3 0 0 1-6 0V7m6 0a3 3 0 0 0 6 0V7"></path>
+            <path d="M4 21V10m16 11V10M9 21v-4a3 3 0 0 1 6 0v4"></path>
+          </svg>
+        </div>
+        <div class="sidebar-title-container">
+          <div style="display:flex; align-items:center;">
+            <span class="sidebar-title">Contract Rates</span>
+            <span id="cloud-badge" class="badge" style="font-size: 8px; padding: 1px 4px; margin-left: 6px; background:rgba(6, 182, 212, 0.2); color:#22d3ee; display:none; border:1px solid rgba(6,182,212,0.3); font-weight:700;">Cloud</span>
+          </div>
+          <span class="sidebar-subtitle">Hotel Tracker v1.0</span>
+        </div>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li class="menu-item active" data-target="page-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          แดชบอร์ด & แจ้งเตือน
+        </li>
+        <li class="menu-item" data-target="page-hotels">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          ข้อมูลโรงแรม & สัญญา
+        </li>
+        <li class="menu-item" data-target="page-analytics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          วิเคราะห์เปรียบเทียบราคา
+        </li>
+        <li class="menu-item" data-target="page-locations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          จัดการพื้นที่ & จังหวัด
+        </li>
+        <li class="menu-item" data-target="page-settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          การตั้งค่า & แม่แบบเมล
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <button class="backup-btn" id="btn-export-db">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+          </svg>
+          สำรองข้อมูล (Export JSON)
+        </button>
+        <button class="backup-btn" id="btn-trigger-import">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path>
+          </svg>
+          นำเข้าข้อมูล (Import JSON)
+        </button>
+        <input type="file" id="import-db-file" style="display:none;" accept=".json">
+      </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ================= PAGE 1: DASHBOARD ================= -->
+      <section id="page-dashboard" class="page active">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>แดชบอร์ด & การแจ้งเตือนสัญญา</h1>
+            <p>ภาพรวมสัญญาห้องพักโรงแรม, สรุปสถานะโปรโมชั่น และรายการเตือนความจำต่อสัญญา</p>
+          </div>
+        </div>
+        
+        <!-- Summary Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-total-hotels">0</span>
+              <span class="stat-label">โรงแรมทั้งหมด</span>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-active-contracts">0</span>
+              <span class="stat-label">สัญญาหลักใช้งานอยู่</span>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-expiring-soon">0</span>
+              <span class="stat-label">ใกล้หมดอายุ</span>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-expired">0</span>
+              <span class="stat-label">หมดอายุแล้ว</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Two Column Layout: Alerts and Promotion Status -->
+        <div class="grid-3">
+          
+          <!-- Column 1: Promotion Status Table -->
+          <div class="card">
+            <div class="card-title-bar">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;stroke:var(--accent-blue);"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                สถานะสัญญารายโรงแรมและโปรโมชั่นช่วงนี้
+              </h2>
+              <div class="filters-bar" style="margin-bottom:0;">
+                <select class="select-custom" id="dash-filter-province">
+                  <option value="">ทุกจังหวัด</option>
+                </select>
+                <select class="select-custom" id="dash-filter-promo-status">
+                  <option value="">ทุกสถานะโปรโมชั่น</option>
+                  <option value="has_promo">มีโปรโมชั่นแอคทีฟ</option>
+                  <option value="no_promo">ไม่มีโปรโมชั่น</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ชื่อโรงแรม</th>
+                    <th>ระดับ</th>
+                    <th>จังหวัด/พื้นที่</th>
+                    <th>ราคาเริ่มต้นสัญญาหลัก</th>
+                    <th>ราคาโปรโมชั่นปัจจุบัน</th>
+                    <th>สถานะโปรโมชั่น</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-hotels-tbody">
+                  <!-- Dynamic rows go here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Column 2: Expiring Soon Alerts Panel -->
+          <div class="card">
+            <div class="card-title-bar">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;stroke:var(--color-warning);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                สัญญาต้องดำเนินการต่ออายุ
+              </h2>
+            </div>
+            
+            <div class="alert-list" id="dash-alerts-container">
+              <!-- Alerts populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ================= PAGE 2: HOTELS & CONTRACTS ================= -->
+      <section id="page-hotels" class="page">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>ข้อมูลโรงแรมและสัญญา</h1>
+            <p>จัดการรายชื่อโรงแรม ข้อมูลติดต่อเซลล์ และประวัติสัญญาห้องพักทั้งหมด</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" id="btn-add-hotel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              เพิ่มโรงแรมใหม่
+            </button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="filters-bar">
+            <div class="search-input-container">
+              <input type="text" class="input-custom" id="hotels-search" placeholder="ค้นหาชื่อโรงแรม...">
+            </div>
+            <select class="select-custom" id="hotels-filter-province">
+              <option value="">ทุกจังหวัด</option>
+            </select>
+            <select class="select-custom" id="hotels-filter-area">
+              <option value="">ทุกพื้นที่</option>
+            </select>
+          </div>
+          
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>ชื่อโรงแรม</th>
+                  <th>ระดับดาว</th>
+                  <th>จังหวัด</th>
+                  <th>พื้นที่ท่องเที่ยว</th>
+                  <th>เซลล์ผู้ติดต่อ</th>
+                  <th>อีเมล / LINE ID</th>
+                  <th>สัญญาปัจจุบัน</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="hotels-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ================= PAGE 3: PRICE ANALYTICS ================= -->
+      <section id="page-analytics" class="page">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>วิเคราะห์เปรียบเทียบราคาโรงแรม</h1>
+            <p>วิเคราะห์ราคาสัญญาห้องพักมาตรฐานในพื้นที่เดียวกัน เปรียบเทียบความต่างและหาโรงแรมราคาถูก/แพงสุด</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="filters-bar">
+            <label class="form-label" style="display:inline-block; align-self:center; margin-bottom:0; margin-right:8px;">ระบุพื้นที่วิเคราะห์:</label>
+            <select class="select-custom" id="analytics-filter-province">
+              <option value="">เลือกจังหวัด</option>
+            </select>
+            <select class="select-custom" id="analytics-filter-area">
+              <option value="">เลือกพื้นที่ท่องเที่ยว</option>
+            </select>
+          </div>
+          
+          <div id="analytics-content-view" style="display:none;">
+            <!-- Metrics Summary Cards -->
+            <div class="analytics-summary-cards">
+              <div class="analysis-metric-card">
+                <span class="hotel-info-label">โรงแรมราคาถูกที่สุด</span>
+                <div class="analysis-metric-val green" id="analysis-cheapest-hotel">-</div>
+                <div class="stat-label" id="analysis-cheapest-price">0 บาท</div>
+              </div>
+              
+              <div class="analysis-metric-card">
+                <span class="hotel-info-label">โรงแรมราคาแพงที่สุด</span>
+                <div class="analysis-metric-val red" id="analysis-expensive-hotel">-</div>
+                <div class="stat-label" id="analysis-expensive-price">0 บาท</div>
+              </div>
+              
+              <div class="analysis-metric-card">
+                <span class="hotel-info-label">ราคากลางเฉลี่ยในพื้นที่</span>
+                <div class="analysis-metric-val blue" id="analysis-average-price">0 บาท</div>
+                <div class="stat-label" id="analysis-hotel-count">จากทั้งหมด 0 โรงแรม</div>
+              </div>
+            </div>
+            
+            <div class="grid-2" style="margin-top:24px;">
+              <!-- Price Chart Card -->
+              <div>
+                <h3 style="margin-bottom:12px; font-size:15px; font-weight:600; color:var(--text-primary);">แผนภูมิเปรียบเทียบราคาสัญญาห้องพักมาตรฐาน</h3>
+                <div class="chart-container" id="price-bar-chart">
+                  <!-- Generated bars inside here -->
+                </div>
+              </div>
+              
+              <!-- Comparison Table Card -->
+              <div>
+                <h3 style="margin-bottom:12px; font-size:15px; font-weight:600; color:var(--text-primary);">ตารางแจกแจงราคาและส่วนต่างเมื่อเทียบกับโรงแรมถูกสุด</h3>
+                <div class="table-responsive">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ชื่อโรงแรม</th>
+                        <th>ระดับ</th>
+                        <th>ราคาห้องเริ่มต้น (บาท)</th>
+                        <th>ส่วนต่างจากราคาต่ำสุด</th>
+                        <th>สถานะสัญญา</th>
+                      </tr>
+                    </thead>
+                    <tbody id="analysis-tbody">
+                      <!-- Dynamic rows -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="analytics-placeholder" class="no-alerts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <p style="font-size:14px; font-weight:500;">กรุณาเลือกจังหวัดและพื้นที่ท่องเที่ยวเพื่อทำการวิเคราะห์ข้อมูลราคา</p>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ================= PAGE 4: LOCATIONS MANAGEMENT ================= -->
+      <section id="page-locations" class="page">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>จัดการพื้นที่ & จังหวัดท่องเที่ยว</h1>
+            <p>กำหนดรายชื่อจังหวัดและพื้นที่ย่อยในการจัดกลุ่มโรงแรม เช่น กระบี่ -> อ่าวนาง, คลองม่วง</p>
+          </div>
+        </div>
+        
+        <div class="grid-2">
+          <!-- Form to add location -->
+          <div class="card">
+            <div class="card-title-bar">
+              <h2 class="card-title">เพิ่มจังหวัด / พื้นที่ท่องเที่ยวใหม่</h2>
+            </div>
+            
+            <form id="form-location">
+              <div class="form-group">
+                <label class="form-label" for="loc-province">ชื่อจังหวัด</label>
+                <input type="text" id="loc-province" class="input-custom" placeholder="ตัวอย่าง: กระบี่, ภูเก็ต, สุราษฎร์ธานี" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="loc-area">ชื่อพื้นที่ท่องเที่ยว (ย่อย)</label>
+                <input type="text" id="loc-area" class="input-custom" placeholder="ตัวอย่าง: อ่าวนาง, ป่าตอง, เกาะสมุย" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">บันทึกพื้นที่ใหม่</button>
+            </form>
+          </div>
+          
+          <!-- List of existing locations -->
+          <div class="card">
+            <div class="card-title-bar">
+              <h2 class="card-title">พื้นที่ท่องเที่ยวทั้งหมดในระบบ</h2>
+            </div>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>จังหวัด</th>
+                    <th>พื้นที่ท่องเที่ยวย่อย</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="locations-tbody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ================= PAGE 5: SETTINGS ================= -->
+      <section id="page-settings" class="page">
+        <div class="page-header">
+          <div class="page-title-group">
+            <h1>การตั้งค่า & ข้อมูลบริษัทนำเที่ยว</h1>
+            <p>จัดการข้อมูลทั่วไปของบริษัท แนบหลักฐานอนุญาต และตั้งค่าแม่แบบจดหมายร่างขอต่อสัญญา</p>
+          </div>
+        </div>
+        
+        <form id="form-settings">
+          <div class="grid-2">
+            <!-- Left Card: Company Profile & Documents -->
+            <div class="card">
+              <div class="card-title-bar">
+                <h3 class="card-title">ข้อมูลผู้จัดตั้ง (บริษัทนำเที่ยว)</h3>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="set-company-name">ชื่อบริษัท (ไทย/อังกฤษ)</label>
+                <input type="text" id="set-company-name" class="input-custom" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="set-license-no">เลขที่ใบอนุญาตนำเที่ยว (Travel Agent License)</label>
+                <input type="text" id="set-license-no" class="input-custom" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">เอกสารยืนยันตัวตนบริษัท (Company Documents / Profile)</label>
+                <div class="upload-drag-area" id="company-doc-dropzone">
+                  <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>
+                  <div class="upload-text">อัปโหลดไฟล์เอกสารบริษัท (PDF, รูปภาพ)</div>
+                  <div class="upload-hint">ไฟล์นี้จะถูกเก็บไว้ใช้แนบอ้างอิงในการต่อสัญญากับเซลล์โรงแรม</div>
+                  <input type="file" id="set-company-file" accept=".pdf,image/*">
+                </div>
+                
+                <div class="document-badge-list" id="company-doc-list">
+                  <!-- Attached files show here -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Card: Email Template Configuration -->
+            <div class="card">
+              <div class="card-title-bar">
+                <h3 class="card-title">แม่แบบอีเมลขอต่อสัญญา (Email Template)</h3>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">คำค้นหาที่จะถูกแทนที่อัตโนมัติ (Placeholder Tags):</label>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">
+                  <code style="background:rgba(255,255,255,0.05); padding:2px 4px; border-radius:3px;">{hotelName}</code> = ชื่อโรงแรม | 
+                  <code style="background:rgba(255,255,255,0.05); padding:2px 4px; border-radius:3px;">{companyName}</code> = ชื่อบริษัทนำเที่ยว | <br>
+                  <code style="background:rgba(255,255,255,0.05); padding:2px 4px; border-radius:3px;">{licenseNumber}</code> = เลขที่ใบอนุญาตบริษัท
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="set-email-template">เนื้อหาจดหมายหลัก</label>
+                <textarea id="set-email-template" class="input-custom" style="height: 250px; font-family:var(--font-family); line-height: 1.6;" required></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display:flex; justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              บันทึกการตั้งค่าทั้งหมด
+            </button>
+          </div>
+        </form>
+
+        <!-- Supabase Cloud Card -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-title-bar">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;stroke:var(--accent-blue);"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              ระบบฐานข้อมูลคลาวด์ออนไลน์ (Supabase Cloud Sync)
+            </h3>
+            <span id="supabase-status-badge" class="badge badge-danger">ยังไม่ได้เชื่อมต่อ</span>
+          </div>
+          
+          <div class="grid-2" style="grid-template-columns: 1fr 1fr; gap:20px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:20px;">
+            <div>
+              <div class="form-group">
+                <label class="form-label" for="set-supabase-url">Supabase Project URL</label>
+                <input type="text" id="set-supabase-url" class="input-custom" placeholder="ตัวอย่าง: https://xxxxxx.supabase.co">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="set-supabase-key">Supabase Anon Key</label>
+                <input type="password" id="set-supabase-key" class="input-custom" placeholder="คีย์สาธารณะ (Anon Public Key) ที่ขึ้นต้นด้วย eyJ...">
+              </div>
+              <div style="display:flex; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn btn-primary" id="btn-save-supabase">เชื่อมต่อและเปิดใช้ระบบคลาวด์</button>
+                <button type="button" class="btn btn-danger" id="btn-disconnect-supabase" style="display:none;">ปิดระบบคลาวด์</button>
+              </div>
+              <div style="font-size: 11px; margin-top:12px; line-height: 1.4; color:var(--text-secondary);" id="supabase-connection-msg">
+                * หากเชื่อมต่อแล้ว ระบบจะสลับไปอ่าน-เขียนข้อมูลเรียลไทม์กับทุกคนโดยอัตโนมัติ
+              </div>
+            </div>
+            
+            <div>
+              <div class="form-group">
+                <label class="form-label">ย้ายข้อมูลจากระบบออฟไลน์ (Local Migration)</label>
+                <p style="font-size:11px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                  หากคุณเคยบันทึกข้อมูลจังหวัด โรงแรม หรือสัญญาไว้ในเครื่องนี้ และต้องการส่งข้อมูลทั้งหมดขึ้นคลาวด์เพื่อเริ่มต้นแบ่งปันกับผู้อื่น ให้คลิกปุ่มด้านล่างนี้หลังจากเชื่อมต่อคลาวด์สำเร็จแล้ว:
+                </p>
+                <button type="button" class="btn btn-secondary" id="btn-sync-to-cloud" style="width:100%;" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>
+                  อัปโหลดข้อมูลเดิมในเครื่องขึ้นระบบคลาวด์ (Sync Data to Cloud)
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label class="form-label">สคริปต์ SQL สำหรับสร้างตารางบน Supabase (SQL Script Setup)</label>
+            <p style="font-size:11px; color:var(--text-muted); line-height:1.5; margin-bottom:8px;">
+              ให้คุณคัดลอกโค้ด SQL ด้านล่างนี้ ไปวางและกดรันที่เมนู <strong>SQL Editor -> New Query</strong> ในหน้า Supabase Project ของคุณ เพื่อจัดเตรียมตารางและเชื่อมโยงข้อมูลให้พร้อมใช้งาน:
+            </p>
+            <div style="position:relative;">
+              <textarea id="supabase-sql-script" readonly class="input-custom" style="height:120px; font-family:monospace; font-size:10px; background:#070a10; color:#bfdbfe; line-height:1.4;"></textarea>
+              <button type="button" class="btn btn-secondary btn-icon" id="btn-copy-sql" style="position:absolute; right:10px; top:10px;" title="คัดลอกสคริปต์ SQL">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+    </main>
+  </div>
+
+  <!-- ==================== MODAL: ADD/EDIT HOTEL ==================== -->
+  <div class="modal-overlay" id="modal-hotel">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="hotel-modal-title">เพิ่มโรงแรมใหม่</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-hotel')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="form-hotel">
+        <input type="hidden" id="hotel-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="hotel-name">ชื่อโรงแรม</label>
+            <input type="text" id="hotel-name" class="input-custom" placeholder="ตัวอย่าง: อ่าวนาง พาราไดซ์ รีสอร์ท" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="hotel-stars">ระดับดาวของโรงแรม</label>
+              <select id="hotel-stars" class="select-custom" style="width:100%;" required>
+                <option value="5">⭐⭐⭐⭐⭐ (5 ดาว)</option>
+                <option value="4" selected>⭐⭐⭐⭐ (4 ดาว)</option>
+                <option value="3">⭐⭐⭐ (3 ดาว)</option>
+                <option value="2">⭐⭐ (2 ดาว)</option>
+                <option value="1">⭐ (1 ดาว)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="hotel-province">จังหวัด</label>
+              <select id="hotel-province" class="select-custom" style="width:100%;" required>
+                <!-- Filled dynamically -->
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="hotel-area">พื้นที่ท่องเที่ยว</label>
+            <select id="hotel-area" class="select-custom" style="width:100%;" required>
+              <option value="">-- กรุณาเลือกจังหวัดก่อน --</option>
+            </select>
+          </div>
+          
+          <h4 style="margin: 18px 0 10px 0; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-secondary); border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">ข้อมูลติดต่อทีมงานฝ่ายขาย (Sales Contract)</h4>
+          
+          <div class="form-group">
+            <label class="form-label" for="hotel-sales-email">อีเมลฝ่ายขาย (Sales Email)</label>
+            <input type="email" id="hotel-sales-email" class="input-custom" placeholder="ตัวอย่าง: sales@hotelname.com" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="hotel-sales-cc">อีเมลสำเนา (CC Emails)</label>
+            <input type="text" id="hotel-sales-cc" class="input-custom" placeholder="ตัวอย่าง: rsvn@hotelname.com, gm@hotelname.com (คั่นด้วยจุลภาค)">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="hotel-line-id">LINE ID ของฝ่ายขาย (สำหรับเอกสารช่องทางไลน์)</label>
+            <input type="text" id="hotel-line-id" class="input-custom" placeholder="ตัวอย่าง: @hotelsales หรือไอดีปกติ">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-hotel')">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกข้อมูลโรงแรม</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ADD CONTRACT ==================== -->
+  <div class="modal-overlay" id="modal-contract">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="contract-modal-title">สร้างสัญญาค่าห้องพักใหม่</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-contract')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="form-contract">
+        <input type="hidden" id="contract-id">
+        <input type="hidden" id="contract-hotel-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">โรงแรม</label>
+            <div id="contract-hotel-display-name" style="font-weight:700; font-size:15px; color:#fff;">-</div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="contract-type">ประเภทสัญญา (Contract Type)</label>
+              <select id="contract-type" class="select-custom" style="width:100%;" required>
+                <option value="main" selected>Main Contract (สัญญารายปี)</option>
+                <option value="promo">Promotion Rates (สัญญาเฉพาะช่วง)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="contract-rate">ราคาห้องพักเริ่มต้น (Standard Room Rate)</label>
+              <div style="position:relative;">
+                <input type="number" id="contract-rate" class="input-custom" placeholder="ระบุราคาเป็นบาท" required style="padding-right:40px;">
+                <span style="position:absolute; right:12px; top:10px; font-size:12px; color:var(--text-muted);">บาท</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="contract-start">วันเริ่มต้นสัญญา</label>
+              <input type="date" id="contract-start" class="input-custom" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="contract-end">วันสิ้นสุดสัญญา</label>
+              <input type="date" id="contract-end" class="input-custom" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">อัปโหลดไฟล์แนบสัญญา (PDF หรือ รูปภาพหลักฐาน)</label>
+            <div class="upload-drag-area" id="contract-file-dropzone">
+              <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>
+              <div class="upload-text">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</div>
+              <div class="upload-hint">รองรับไฟล์เอกสาร PDF หรือรูปภาพ (PNG, JPG) เพื่อเก็บในระบบ</div>
+              <input type="file" id="contract-file" accept=".pdf,image/*">
+            </div>
+            <div id="contract-uploaded-file-info" style="display:none;" class="file-uploaded-info">
+              <span class="file-name-txt" id="contract-uploaded-file-name">-</span>
+              <button type="button" class="btn-danger btn-icon" id="btn-remove-contract-file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-contract')">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกสัญญา</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: HOTEL DETAILS & CONTRACT HISTORY ==================== -->
+  <div class="modal-overlay" id="modal-hotel-details">
+    <div class="modal large">
+      <div class="modal-header">
+        <h3 class="modal-title">รายละเอียดโรงแรมและประวัติสัญญา</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-hotel-details')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="hotel-details-grid">
+          
+          <!-- Left side: Hotel Info -->
+          <div style="border-right: 1px solid var(--card-border); padding-right: 20px;">
+            <div class="hotel-info-block">
+              <span class="hotel-info-label">ชื่อโรงแรม</span>
+              <div class="hotel-info-val" id="detail-hotel-name" style="font-size:18px; color:#fff;">-</div>
+            </div>
+            
+            <div class="hotel-info-block">
+              <span class="hotel-info-label">ระดับดาว</span>
+              <div class="stars-container" id="detail-hotel-stars" style="margin-top:6px;">
+                <!-- Filled by JS -->
+              </div>
+            </div>
+            
+            <div class="hotel-info-block">
+              <span class="hotel-info-label">พื้นที่ท่องเที่ยว / จังหวัด</span>
+              <div class="hotel-info-val" id="detail-hotel-location">-</div>
+            </div>
+            
+            <div class="hotel-info-block">
+              <span class="hotel-info-label">อีเมลติดต่อฝ่ายขาย (Sales)</span>
+              <div class="hotel-info-val" id="detail-hotel-email">-</div>
+            </div>
+            
+            <div class="hotel-info-block">
+              <span class="hotel-info-label">อีเมลสำเนา (CC)</span>
+              <div class="hotel-info-val" id="detail-hotel-cc">-</div>
+            </div>
+            
+            <div class="hotel-info-block">
+              <span class="hotel-info-label">LINE ID</span>
+              <div class="hotel-info-val" id="detail-hotel-line">-</div>
+            </div>
+            
+            <div style="margin-top:20px;">
+              <button class="btn btn-primary" id="btn-detail-add-contract" style="width:100%; margin-bottom:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                สร้างสัญญาใหม่
+              </button>
+              <button class="btn btn-secondary" id="btn-detail-send-email" style="width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                ติดต่อขอต่อสัญญา (อีเมล)
+              </button>
+            </div>
+          </div>
+          
+          <!-- Right side: Contract Timeline / History -->
+          <div>
+            <h4 style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:16px;">ประวัติและสัญญาห้องพักทั้งหมด</h4>
+            <div id="detail-contract-timeline">
+              <!-- Timeline items populated dynamically -->
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('modal-hotel-details')">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EMAIL RENEWAL BUILDER ==================== -->
+  <div class="modal-overlay" id="modal-email-renewal">
+    <div class="modal large">
+      <div class="modal-header">
+        <h3 class="modal-title">เตรียมส่งอีเมลขอต่อสัญญา</h3>
+        <button class="modal-close-btn" onclick="closeModal('modal-email-renewal')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="email-builder-layout">
+          
+          <!-- Left pane: Edit Fields -->
+          <div>
+            <div class="form-group">
+              <label class="form-label" for="email-to">ผู้รับ (Sales Email)</label>
+              <input type="email" id="email-to" class="input-custom" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="email-cc">สำเนาถึง (CC)</label>
+              <input type="text" id="email-cc" class="input-custom" placeholder="ใส่ได้มากกว่า 1 อีเมล คั่นด้วยจุลภาค">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="email-subject">หัวข้ออีเมล (Subject)</label>
+              <input type="text" id="email-subject" class="input-custom" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="email-body">เนื้อความจดหมาย (Body Content)</label>
+              <textarea id="email-body" class="input-custom" style="height: 180px; font-family:var(--font-family); line-height: 1.5;" required></textarea>
+            </div>
+          </div>
+          
+          <!-- Right pane: Company Document Attachment Info -->
+          <div>
+            <div class="card" style="margin-bottom:0; background:rgba(255,255,255,0.02); height: 100%;">
+              <h4 style="font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text-secondary); margin-bottom:10px;">แนบเอกสารรับรองของบริษัท</h4>
+              <p style="font-size:11px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+                ระบบจะแจ้งเตือนให้คุณนำส่งเอกสารเหล่านี้ร่วมไปด้วย เนื่องจากระบบเปิดเบราว์เซอร์ไม่สามารถแนบไฟล์เข้า Outlook/Gmail ท้องถิ่นอัตโนมัติได้โดยตรง 
+                <strong>แนะนำให้คลิกดาวน์โหลดไฟล์เหล่านี้ไว้ เพื่อนำไปคลิกแนบต่อในเมลได้ทันที:</strong>
+              </p>
+              
+              <div class="document-badge-list" id="email-attached-docs-list">
+                <!-- Attached company documents listed here with Download buttons -->
+              </div>
+              
+              <div style="margin-top:20px; padding: 12px; border:1px solid rgba(245,158,11,0.2); background:rgba(245,158,11,0.05); border-radius:8px; font-size:11px; color:var(--color-warning); line-height:1.4;">
+                <strong>💡 คำแนะนำการส่ง:</strong><br>
+                เมื่อกดเลือกช่องทางส่งระบบจะคัดลอกเนื้อความจดหมายให้อัตโนมัติ และเปิดหน้าเขียนเมลทันที ท่านเพียงคลิกวาง (Paste/Ctrl+V) เนื้อหา และแนบไฟล์ใบอนุญาตที่ดาวน์โหลดลงไป
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between; align-items:center;">
+        <span style="font-size:11px; color:var(--text-muted);" id="email-renewal-target-hotel">-</span>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-email-renewal')">ยกเลิก</button>
+          
+          <!-- Send triggers -->
+          <button type="button" class="btn btn-primary" id="btn-send-gmail" style="background:#ea4335;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px; margin-right:4px;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            เปิดส่งใน Gmail (Web)
+          </button>
+          
+          <button type="button" class="btn btn-primary" id="btn-send-outlook" style="background:#0078d4;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px; margin-right:4px;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-.4 4.25l-7.07 4.42c-.32.2-.74.2-1.06 0L4.4 8.25c-.25-.16-.4-.43-.4-.72 0-.6.65-.99 1.17-.68l6.83 4.27 6.83-4.27c.52-.31 1.17.08 1.17.68 0 .29-.15.56-.4.72z"/></svg>
+            เปิดส่งใน Outlook
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast" id="toast-notify">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    <div class="toast-msg" id="toast-msg">บันทึกข้อมูลสำเร็จ!</div>
+  </div>
+
+  <!-- LOAD SCRIPTS IN ORDER -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
