@@ -718,8 +718,7 @@ function renderSettingsForm() {
   document.getElementById('set-company-name').value = settingsState.companyName || '';
   document.getElementById('set-license-no').value = settingsState.travelAgentLicense || '';
   document.getElementById('set-email-template').value = settingsState.emailTemplate || '';
-  // สั่งโหลดหัวข้อเรื่องอีเมลเดิมมาแสดงผลในช่องกรอกใหม่
-    document.getElementById('email-subject-input').value = settingsState.emailSubject || 'ขอความอนุเคราะห์ต่อสัญญาอัตราห้องพัก - {hotelName}';
+  
   // Supabase Fields
   document.getElementById('set-supabase-url').value = localStorage.getItem('supabase_url') || '';
   document.getElementById('set-supabase-key').value = localStorage.getItem('supabase_anon_key') || '';
@@ -931,14 +930,7 @@ async function initiateRenewal(contractId) {
   bodyText = bodyText.replace(/{licenseNumber}/g, settingsState.travelAgentLicense);
   
   const typeLabel = contract.type === 'main' ? 'Main Contract' : 'Promotion';
-        
-        // 1. ดึงหัวข้อเรื่องที่ผู้ใช้เซฟมาจากระบบตั้งค่า (ถ้าไม่มีให้ใช้ค่าเริ่มต้น)
-        let subjectText = settingsState.emailSubject || 'ขอความอนุเคราะห์ต่อสัญญาอัตราห้องพัก - {hotelName}';
-        
-        // 2. แปลง Tag อัตโนมัติให้กลายเป็นข้อมูลจริงของโรงแรมและสัญญาชิ้นนั้น
-        subjectText = subjectText.replace(/{hotelName}/g, hotel.name || '');
-        subjectText = subjectText.replace(/{companyName}/g, settingsState.companyName || '');
-        subjectText = subjectText.replace(/{contractType}/g, typeLabel);
+  const subjectText = `ขอเสนอการต่อสัญญาอัตราห้องพักปีใหม่ (${typeLabel}) - โรงแรม ${hotel.name} / ${settingsState.companyName}`;
   
   // Pre-fill fields in Email modal
   document.getElementById('email-to').value = hotel.email || '';
@@ -1070,25 +1062,7 @@ function initFormListeners() {
     populateSelectDropdowns();
     showToast('บันทึกพื้นที่ย่อยสำเร็จ!');
   });
-    // ==========================================
-    // 💡 จุดที่ 2: ตรวจจับประเภทสัญญา เพื่อเปิด/ปิดช่องวันที่เดินทาง (Stay Period)
-    // ==========================================
-    const contractTypeSelect = document.getElementById('contract-type');
-    const stayPeriodGroup = document.getElementById('stay-period-group');
-
-    if (contractTypeSelect && stayPeriodGroup) {
-        contractTypeSelect.addEventListener('change', function() {
-            // ถ้าเลือกประเภทสัญญาที่มีคำว่า Promotion หรือโปรโมชั่นเฉพาะช่วง
-            if (this.value.includes('Promotion') || this.value === 'promotion') {
-                stayPeriodGroup.style.display = 'grid'; // เปิดกล่องเป็น Grid 2 ฝั่งซ้ายขวาตามที่ตั้งใน HTML
-            } else {
-                stayPeriodGroup.style.display = 'none';  // ซ่อนกล่องไว้ถ้าเลือกสัญญาหลักรายปี
-                // ล้างค่าวันที่ด้านในออกเพื่อความสะอาดของข้อมูล
-                document.getElementById('contract-stay-start').value = '';
-                document.getElementById('contract-stay-end').value = '';
-            }
-        });
-    }
+  
   // 2. Form: Add/Edit Hotel
   const formHotel = document.getElementById('form-hotel');
   formHotel.addEventListener('submit', async (event) => {
@@ -1103,7 +1077,7 @@ function initFormListeners() {
     const cc = document.getElementById('hotel-sales-cc').value.trim();
     const lineId = document.getElementById('hotel-line-id').value.trim();
     
-    if (!name || !province || !area) {
+    if (!name || !province || !area || !email) {
       showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน', true);
       return;
     }
@@ -1169,67 +1143,22 @@ function initFormListeners() {
       handleContractFileSelect(e.dataTransfer.files[0]);
     }
   });
-  // ฟังก์ชันเสริมสำหรับย่อขนาดและบีบอัดไฟล์รูปภาพ (ถ้าไม่ใช่รูปภาพ เช่น PDF จะส่งไฟล์เดิมกลับไป)
-function compressImageProcess(file, maxWidth = 1200, quality = 0.7) {
-    return new Promise((resolve) => {
-        // ตรวจสอบว่าถ้าไม่ใช่ไฟล์รูปภาพ ไม่ต้องบีบอัด ให้ส่งไฟล์เดิมกลับออกไป
-        if (!file.type.startsWith('image/')) {
-            return resolve(file);
-        }
-
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = function (event) {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = function () {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-
-                // ทำการคำนวณสัดส่วนเพื่อย่อขนาดพิกเซลหากรูปใหญ่เกินไป
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // บีบอัดคุณภาพรูปเหลือ 70% (ลดขนาดไฟล์ได้มหาศาลโดยตารับภาพยังชัดเจน)
-                canvas.toBlob((blob) => {
-                    const compressedFile = new File([blob], file.name, { type: file.type });
-                    resolve(compressedFile);
-                }, file.type, quality);
-            };
-        };
-    });
-}
-
-// 🎯 ปรับปรุงฟังก์ชันรับไฟล์เดิมของพี่ให้รองรับการบีบอัดออโต้
-async function handleContractFileSelect(file) {
+  
+  function handleContractFileSelect(file) {
     if (!file) return;
-
-    showToast('กำลังประมวลผลและบีบอัดไฟล์...');
-
-    // ส่งไฟล์ไปเข้ากระบวนการบีบอัด (ถ้ารูปภาพจะเล็กลงทันที)
-    const processedFile = await compressImageProcess(file);
-
+    
     const reader = new FileReader();
     reader.onload = function(event) {
-        // นำค่าไฟล์ที่ผ่านการบีบอัดแล้วบันทึกลงตัวแปรระบบเพื่อเตรียมยิงเข้าฐานข้อมูล
-        contractAttachedFileBase64 = event.target.result;
-        contractAttachedFileName = processedFile.name;
-        contractAttachedFileType = processedFile.type;
-
-        document.getElementById('contract-uploaded-file-name').textContent = processedFile.name;
-        document.getElementById('contract-uploaded-file-info').style.display = 'flex';
-        showToast('แนบไฟล์และบีบอัดข้อมูลเรียบร้อยแล้ว!');
+      contractAttachedFileBase64 = event.target.result;
+      contractAttachedFileName = file.name;
+      contractAttachedFileType = file.type;
+      
+      document.getElementById('contract-uploaded-file-name').textContent = file.name;
+      document.getElementById('contract-uploaded-file-info').style.display = 'flex';
+      showToast('แนบไฟล์สัญญาห้องพักแล้ว!');
     };
-    reader.readAsDataURL(processedFile);
-}
+    reader.readAsDataURL(file);
+  }
   
   // Remove attached contract file
   document.getElementById('btn-remove-contract-file').addEventListener('click', () => {
@@ -1251,9 +1180,7 @@ async function handleContractFileSelect(file) {
     const rate = parseFloat(document.getElementById('contract-rate').value);
     const startDate = document.getElementById('contract-start').value;
     const endDate = document.getElementById('contract-end').value;
-    const stayStartDate = document.getElementById('contract-stay-start').value;
-    const stayEndDate = document.getElementById('contract-stay-end').value;
-
+    
     if (!startDate || !endDate || isNaN(rate)) {
       showToast('กรุณากรอกระยะเวลาสัญญาและราคาเริ่มต้น', true);
       return;
@@ -1270,10 +1197,6 @@ async function handleContractFileSelect(file) {
       type,
       startDate,
       endDate,
-
-      stayStartDate: stayStartDate ? stayStartDate : null,
-      stayEndDate: stayEndDate ? stayEndDate : null,
-
       baseRate: rate,
       fileName: contractAttachedFileName || '',
       fileData: contractAttachedFileBase64 || '',
@@ -1361,27 +1284,23 @@ async function handleContractFileSelect(file) {
   // Save settings
   formSettings.addEventListener('submit', async (event) => {
     event.preventDefault();
-
+    
     const companyName = document.getElementById('set-company-name').value.trim();
     const travelAgentLicense = document.getElementById('set-license-no').value.trim();
     const emailTemplate = document.getElementById('set-email-template').value;
-    // 1. ดึงข้อมูลหัวข้อเรื่องอีเมลจากกล่องรับค่าที่เราเพิ่งเพิ่มเข้าไปใหม่
-    const emailSubject = document.getElementById('email-subject-input').value.trim();
-
+    
     settingsState.companyName = companyName;
     settingsState.travelAgentLicense = travelAgentLicense;
     settingsState.emailTemplate = emailTemplate;
-    // 2. เก็บหัวเรื่องอีเมลเข้าตัวแปรส่วนกลาง (State) เพื่อรอเซฟลงฐานข้อมูล
-    settingsState.emailSubject = emailSubject;
-
+    
     await putItem('settings', {
-        id: 'company_settings',
-        ...settingsState
+      id: 'company_settings',
+      ...settingsState
     });
-
+    
     await refreshState();
     showToast('บันทึกการตั้งค่าบริษัทและแม่แบบเมลเรียบร้อย!');
-});
+  });
 }
 
 // Settings: Cloud Sync Configuration Listeners
@@ -1563,39 +1482,36 @@ window.viewHotelDetails = function(hotelId) {
       } else if (status === 'Expiring') {
         dotColor = 'warning';
         statusBadge = `<span class="badge badge-warning">ใกล้หมดอายุ</span>`;
-      }  
-
-        const stayStartStr = contract.stayStartDate ? formatDateThai(contract.stayStartDate) : '-';
-        const stayEndStr = contract.stayEndDate ? formatDateThai(contract.stayEndDate) : '-';
-        const fileLink = contract.fileData ? `<button class="btn btn-secondary btn-icon" onclick="viewOrDownloadFile(this)" data-file="${contract.fileData}" data-name="${contract.fileName}" title="ดูไฟล์แนบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></button>` : '<span style="color:var(--text-muted);font-size:11px;">ไม่มีไฟล์แนบ</span>';
-
-        const item = document.createElement('div');
-        item.className = 'contract-timeline-item';
-        item.innerHTML = `
-            <div class="contract-timeline-dot ${dotColor}"></div>
-            <div class="contract-timeline-content">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
-                    <div>
-                        <span style="font-weight:600; font-size:14px; margin-right:8px;">${typeText}</span>
-                        ${statusBadge}
-                    </div>
-                    <div style="font-weight:700; color:var(--accent-purple); font-size:15px;">
-                        ${Number(contract.baseRate).toLocaleString('th-TH')} บาท
-                    </div>
-                </div>
-                <div class="contract-timeline-dates" style="font-size:12px; color:var(--text-secondary); line-height:1.6;">
-                    <div>ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}</div>
-                    <div style="margin-top: 4px; font-size: 11px; color: #a0aec0;">
-                        ช่วงเวลาเดินทาง (Stay Period): <span style="color: #63b3ed; font-weight: bold;">${stayStartStr} ถึง ${stayEndStr}</span>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.05);">
-                    <div style="font-size:11px; color:var(--text-muted);">สร้างเมื่อ: ${formatDateThai(contract.created_at || new Date())}</div>
-                    <div>${fileLink}</div>
-                </div>
-            </div>
-        `;
-        timeline.appendChild(item);
+      }
+      
+      const fileLink = contract.fileData 
+        ? `<button class="btn btn-secondary btn-icon" onclick="downloadBase64File('${contract.fileData}', '${contract.fileName}')" title="ดาวน์โหลดไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg></button>`
+        : `<span style="font-size:11px;color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
+        
+      const item = document.createElement('div');
+      item.className = 'contract-timeline-item';
+      item.innerHTML = `
+        <div class="contract-timeline-dot ${dotColor}"></div>
+        <div class="contract-timeline-card">
+          <div class="contract-timeline-header">
+            <div class="contract-timeline-title" style="font-weight:700;">${typeText}</div>
+            ${statusBadge}
+          </div>
+          <div class="contract-timeline-dates">
+            ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
+          </div>
+          <div class="contract-timeline-rate">
+            ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+          </div>
+          <div class="contract-timeline-actions">
+            ${fileLink}
+            <button class="btn btn-danger btn-icon" onclick="deleteContractClick('${contract.id}', '${hotel.id}')" title="ลบสัญญา">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>
+      `;
+      timeline.appendChild(item);
     });
   }
   
@@ -1841,38 +1757,3 @@ function formatDateThai(dateStr) {
   
   return `${day} ${month} ${year}`;
 }
-// ฟังก์ชันเปิดพรีวิวไฟล์เวอร์ชันเสถียรที่สุด (วางไว้ล่างสุดของไฟล์ app.js)
-window.viewOrDownloadFile = function(buttonElement) {
-    try {
-        // ดึงข้อมูลจาก Data Attributes ของปุ่มที่ถูกคลิก
-        const base64Data = buttonElement.getAttribute('data-file');
-        const fileName = buttonElement.getAttribute('data-name');
-        
-        if (!base64Data) return;
-
-        const extension = fileName.split('.').pop().toLowerCase();
-        let mimeType = 'application/octet-stream';
-        
-        if (extension === 'pdf') {
-            mimeType = 'application/pdf';
-        } else if (extension === 'jpg' || extension === 'jpeg') {
-            mimeType = 'image/jpeg';
-        } else if (extension === 'png') {
-            mimeType = 'image/png';
-        }
-
-        const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        const fileURL = URL.createObjectURL(blob);
-
-        window.open(fileURL, '_blank');
-    } catch (error) {
-        console.error('Error opening file:', error);
-        alert('ไม่สามารถเปิดไฟล์ได้ กรุณาลองใหม่อีกครั้ง');
-    }
-};
