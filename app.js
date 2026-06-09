@@ -718,7 +718,8 @@ function renderSettingsForm() {
   document.getElementById('set-company-name').value = settingsState.companyName || '';
   document.getElementById('set-license-no').value = settingsState.travelAgentLicense || '';
   document.getElementById('set-email-template').value = settingsState.emailTemplate || '';
-  
+  // สั่งโหลดหัวข้อเรื่องอีเมลเดิมมาแสดงผลในช่องกรอกใหม่
+    document.getElementById('email-subject-input').value = settingsState.emailSubject || 'ขอความอนุเคราะห์ต่อสัญญาอัตราห้องพัก - {hotelName}';
   // Supabase Fields
   document.getElementById('set-supabase-url').value = localStorage.getItem('supabase_url') || '';
   document.getElementById('set-supabase-key').value = localStorage.getItem('supabase_anon_key') || '';
@@ -930,7 +931,14 @@ async function initiateRenewal(contractId) {
   bodyText = bodyText.replace(/{licenseNumber}/g, settingsState.travelAgentLicense);
   
   const typeLabel = contract.type === 'main' ? 'Main Contract' : 'Promotion';
-  const subjectText = `ขอเสนอการต่อสัญญาอัตราห้องพักปีใหม่ (${typeLabel}) - โรงแรม ${hotel.name} / ${settingsState.companyName}`;
+        
+        // 1. ดึงหัวข้อเรื่องที่ผู้ใช้เซฟมาจากระบบตั้งค่า (ถ้าไม่มีให้ใช้ค่าเริ่มต้น)
+        let subjectText = settingsState.emailSubject || 'ขอความอนุเคราะห์ต่อสัญญาอัตราห้องพัก - {hotelName}';
+        
+        // 2. แปลง Tag อัตโนมัติให้กลายเป็นข้อมูลจริงของโรงแรมและสัญญาชิ้นนั้น
+        subjectText = subjectText.replace(/{hotelName}/g, hotel.name || '');
+        subjectText = subjectText.replace(/{companyName}/g, settingsState.companyName || '');
+        subjectText = subjectText.replace(/{contractType}/g, typeLabel);
   
   // Pre-fill fields in Email modal
   document.getElementById('email-to').value = hotel.email || '';
@@ -1284,23 +1292,27 @@ function initFormListeners() {
   // Save settings
   formSettings.addEventListener('submit', async (event) => {
     event.preventDefault();
-    
+
     const companyName = document.getElementById('set-company-name').value.trim();
     const travelAgentLicense = document.getElementById('set-license-no').value.trim();
     const emailTemplate = document.getElementById('set-email-template').value;
-    
+    // 1. ดึงข้อมูลหัวข้อเรื่องอีเมลจากกล่องรับค่าที่เราเพิ่งเพิ่มเข้าไปใหม่
+    const emailSubject = document.getElementById('email-subject-input').value.trim();
+
     settingsState.companyName = companyName;
     settingsState.travelAgentLicense = travelAgentLicense;
     settingsState.emailTemplate = emailTemplate;
-    
+    // 2. เก็บหัวเรื่องอีเมลเข้าตัวแปรส่วนกลาง (State) เพื่อรอเซฟลงฐานข้อมูล
+    settingsState.emailSubject = emailSubject;
+
     await putItem('settings', {
-      id: 'company_settings',
-      ...settingsState
+        id: 'company_settings',
+        ...settingsState
     });
-    
+
     await refreshState();
     showToast('บันทึกการตั้งค่าบริษัทและแม่แบบเมลเรียบร้อย!');
-  });
+});
 }
 
 // Settings: Cloud Sync Configuration Listeners
