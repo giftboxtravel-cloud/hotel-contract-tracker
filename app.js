@@ -1070,7 +1070,25 @@ function initFormListeners() {
     populateSelectDropdowns();
     showToast('บันทึกพื้นที่ย่อยสำเร็จ!');
   });
-  
+    // ==========================================
+    // 💡 จุดที่ 2: ตรวจจับประเภทสัญญา เพื่อเปิด/ปิดช่องวันที่เดินทาง (Stay Period)
+    // ==========================================
+    const contractTypeSelect = document.getElementById('contract-type');
+    const stayPeriodGroup = document.getElementById('stay-period-group');
+
+    if (contractTypeSelect && stayPeriodGroup) {
+        contractTypeSelect.addEventListener('change', function() {
+            // ถ้าเลือกประเภทสัญญาที่มีคำว่า Promotion หรือโปรโมชั่นเฉพาะช่วง
+            if (this.value.includes('Promotion') || this.value === 'promotion') {
+                stayPeriodGroup.style.display = 'grid'; // เปิดกล่องเป็น Grid 2 ฝั่งซ้ายขวาตามที่ตั้งใน HTML
+            } else {
+                stayPeriodGroup.style.display = 'none';  // ซ่อนกล่องไว้ถ้าเลือกสัญญาหลักรายปี
+                // ล้างค่าวันที่ด้านในออกเพื่อความสะอาดของข้อมูล
+                document.getElementById('contract-stay-start').value = '';
+                document.getElementById('contract-stay-end').value = '';
+            }
+        });
+    }
   // 2. Form: Add/Edit Hotel
   const formHotel = document.getElementById('form-hotel');
   formHotel.addEventListener('submit', async (event) => {
@@ -1233,7 +1251,9 @@ async function handleContractFileSelect(file) {
     const rate = parseFloat(document.getElementById('contract-rate').value);
     const startDate = document.getElementById('contract-start').value;
     const endDate = document.getElementById('contract-end').value;
-    
+    const stayStartDate = document.getElementById('contract-stay-start').value;
+    const stayEndDate = document.getElementById('contract-stay-end').value;
+
     if (!startDate || !endDate || isNaN(rate)) {
       showToast('กรุณากรอกระยะเวลาสัญญาและราคาเริ่มต้น', true);
       return;
@@ -1250,6 +1270,10 @@ async function handleContractFileSelect(file) {
       type,
       startDate,
       endDate,
+      
+      stayStartDate: stayStartDate ? stayStartDate : null,
+      stayEndDate: stayEndDate ? stayEndDate : null,
+
       baseRate: rate,
       fileName: contractAttachedFileName || '',
       fileData: contractAttachedFileBase64 || '',
