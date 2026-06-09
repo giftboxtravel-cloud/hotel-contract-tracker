@@ -1270,7 +1270,7 @@ async function handleContractFileSelect(file) {
       type,
       startDate,
       endDate,
-      
+
       stayStartDate: stayStartDate ? stayStartDate : null,
       stayEndDate: stayEndDate ? stayEndDate : null,
 
@@ -1563,7 +1563,11 @@ window.viewHotelDetails = function(hotelId) {
       } else if (status === 'Expiring') {
         dotColor = 'warning';
         statusBadge = `<span class="badge badge-warning">ใกล้หมดอายุ</span>`;
-      }
+      }  
+
+        const stayStartStr = contract.stayStartDate ? formatDateThai(contract.stayStartDate) : '-';
+        const stayEndStr = contract.stayEndDate ? formatDateThai(contract.stayEndDate) : '-';
+      
       const fileLink = contract.fileData 
             ? `<button class="btn btn-secondary btn-icon" onclick="viewOrDownloadFile(this)" data-file="${contract.fileData}" data-name="${contract.fileName || 'contract'}" title="คลิกเพื่อเปิดดูไฟล์สัญญา">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
@@ -1580,9 +1584,11 @@ window.viewHotelDetails = function(hotelId) {
           <div class="contract-timeline-header">
             <div class="contract-timeline-title" style="font-weight:700;">${typeText}</div>
             ${statusBadge}
-          </div>
           <div class="contract-timeline-dates">
-            ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
+              ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
+              <div style="margin-top: 4px; font-size: 11px; color: #a0aec0;">
+                  ช่วงเวลาเดินทาง (Stay Period): <span style="color: #63b3ed; font-weight: bold;">${stayStartStr} ถึง ${stayEndStr}</span>
+              </div>          
           </div>
           <div class="contract-timeline-rate">
             ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
