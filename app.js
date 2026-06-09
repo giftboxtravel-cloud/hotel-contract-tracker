@@ -1567,41 +1567,35 @@ window.viewHotelDetails = function(hotelId) {
 
         const stayStartStr = contract.stayStartDate ? formatDateThai(contract.stayStartDate) : '-';
         const stayEndStr = contract.stayEndDate ? formatDateThai(contract.stayEndDate) : '-';
-      
-      const fileLink = contract.fileData 
-            ? `<button class="btn btn-secondary btn-icon" onclick="viewOrDownloadFile(this)" data-file="${contract.fileData}" data-name="${contract.fileName || 'contract'}" title="คลิกเพื่อเปิดดูไฟล์สัญญา">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-               </button>`
-            : `<span style="font-size:11px; color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
-      const item = document.createElement('div');
-      item.className = 'contract-timeline-item';
-      item.innerHTML = `
-        <div class="contract-timeline-dot ${dotColor}"></div>
-        <div class="contract-timeline-card">
-          <div class="contract-timeline-header">
-            <div class="contract-timeline-title" style="font-weight:700;">${typeText}</div>
-            ${statusBadge}
-          <div class="contract-timeline-dates">
-              ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
-              <div style="margin-top: 4px; font-size: 11px; color: #a0aec0;">
-                  ช่วงเวลาเดินทาง (Stay Period): <span style="color: #63b3ed; font-weight: bold;">${stayStartStr} ถึง ${stayEndStr}</span>
-              </div>          
-          </div>
-          <div class="contract-timeline-rate">
-            ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
-          </div>
-          <div class="contract-timeline-actions">
-            ${fileLink}
-            <button class="btn btn-danger btn-icon" onclick="deleteContractClick('${contract.id}', '${hotel.id}')" title="ลบสัญญา">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-          </div>
-        </div>
-      `;
-      timeline.appendChild(item);
+        const fileLink = contract.fileData ? `<button class="btn btn-secondary btn-icon" onclick="viewOrDownloadFile(this)" data-file="${contract.fileData}" data-name="${contract.fileName}" title="ดูไฟล์แนบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></button>` : '<span style="color:var(--text-muted);font-size:11px;">ไม่มีไฟล์แนบ</span>';
+
+        const item = document.createElement('div');
+        item.className = 'contract-timeline-item';
+        item.innerHTML = `
+            <div class="contract-timeline-dot ${dotColor}"></div>
+            <div class="contract-timeline-content">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                    <div>
+                        <span style="font-weight:600; font-size:14px; margin-right:8px;">${typeText}</span>
+                        ${statusBadge}
+                    </div>
+                    <div style="font-weight:700; color:var(--accent-purple); font-size:15px;">
+                        ${Number(contract.baseRate).toLocaleString('th-TH')} บาท
+                    </div>
+                </div>
+                <div class="contract-timeline-dates" style="font-size:12px; color:var(--text-secondary); line-height:1.6;">
+                    <div>ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}</div>
+                    <div style="margin-top: 4px; font-size: 11px; color: #a0aec0;">
+                        ช่วงเวลาเดินทาง (Stay Period): <span style="color: #63b3ed; font-weight: bold;">${stayStartStr} ถึง ${stayEndStr}</span>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.05);">
+                    <div style="font-size:11px; color:var(--text-muted);">สร้างเมื่อ: ${formatDateThai(contract.created_at || new Date())}</div>
+                    <div>${fileLink}</div>
+                </div>
+            </div>
+        `;
+        timeline.appendChild(item);
     });
   }
   
