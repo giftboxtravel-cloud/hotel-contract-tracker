@@ -1151,22 +1151,67 @@ function initFormListeners() {
       handleContractFileSelect(e.dataTransfer.files[0]);
     }
   });
-  
-  function handleContractFileSelect(file) {
+  // ฟังก์ชันเสริมสำหรับย่อขนาดและบีบอัดไฟล์รูปภาพ (ถ้าไม่ใช่รูปภาพ เช่น PDF จะส่งไฟล์เดิมกลับไป)
+function compressImageProcess(file, maxWidth = 1200, quality = 0.7) {
+    return new Promise((resolve) => {
+        // ตรวจสอบว่าถ้าไม่ใช่ไฟล์รูปภาพ ไม่ต้องบีบอัด ให้ส่งไฟล์เดิมกลับออกไป
+        if (!file.type.startsWith('image/')) {
+            return resolve(file);
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function (event) {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // ทำการคำนวณสัดส่วนเพื่อย่อขนาดพิกเซลหากรูปใหญ่เกินไป
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // บีบอัดคุณภาพรูปเหลือ 70% (ลดขนาดไฟล์ได้มหาศาลโดยตารับภาพยังชัดเจน)
+                canvas.toBlob((blob) => {
+                    const compressedFile = new File([blob], file.name, { type: file.type });
+                    resolve(compressedFile);
+                }, file.type, quality);
+            };
+        };
+    });
+}
+
+// 🎯 ปรับปรุงฟังก์ชันรับไฟล์เดิมของพี่ให้รองรับการบีบอัดออโต้
+async function handleContractFileSelect(file) {
     if (!file) return;
-    
+
+    showToast('กำลังประมวลผลและบีบอัดไฟล์...');
+
+    // ส่งไฟล์ไปเข้ากระบวนการบีบอัด (ถ้ารูปภาพจะเล็กลงทันที)
+    const processedFile = await compressImageProcess(file);
+
     const reader = new FileReader();
     reader.onload = function(event) {
-      contractAttachedFileBase64 = event.target.result;
-      contractAttachedFileName = file.name;
-      contractAttachedFileType = file.type;
-      
-      document.getElementById('contract-uploaded-file-name').textContent = file.name;
-      document.getElementById('contract-uploaded-file-info').style.display = 'flex';
-      showToast('แนบไฟล์สัญญาห้องพักแล้ว!');
+        // นำค่าไฟล์ที่ผ่านการบีบอัดแล้วบันทึกลงตัวแปรระบบเพื่อเตรียมยิงเข้าฐานข้อมูล
+        contractAttachedFileBase64 = event.target.result;
+        contractAttachedFileName = processedFile.name;
+        contractAttachedFileType = processedFile.type;
+
+        document.getElementById('contract-uploaded-file-name').textContent = processedFile.name;
+        document.getElementById('contract-uploaded-file-info').style.display = 'flex';
+        showToast('แนบไฟล์และบีบอัดข้อมูลเรียบร้อยแล้ว!');
     };
-    reader.readAsDataURL(file);
-  }
+    reader.readAsDataURL(processedFile);
+}
   
   // Remove attached contract file
   document.getElementById('btn-remove-contract-file').addEventListener('click', () => {
