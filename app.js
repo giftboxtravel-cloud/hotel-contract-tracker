@@ -871,19 +871,19 @@ function renderPriceAnalytics() {
     });
   
   // Render Custom SVG-based Bar Chart (responsive)
-  const maxVal = expensivePrice > 0 ? expensivePrice : 1;
+  const maxVal = Math.max(...analysisData.map(item => Math.max(item.mainPrice || 0, item.promoPrice || 0))) * 1.1 || 1000;
   
   // Add chart grid lines & y-axis
-  const yAxisDiv = document.createElement('div');
+const yAxisDiv = document.createElement('div');
   yAxisDiv.className = 'chart-y-axis';
   yAxisDiv.innerHTML = `
-    <div>${Number(maxVal).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</div>
-    <div>${Number(maxVal / 2).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บ.</div>
+    <div>${Number(maxVal).toLocaleString('th-TH')} บ.</div>
+    <div>${Number(maxVal / 2).toLocaleString('th-TH')} บ.</div>
     <div>0 บ.</div>
   `;
   chartContainer.appendChild(yAxisDiv);
   
-  // 50% & 100% dashed grid lines
+  // วาดเส้นกริดไลน์
   const gridLine50 = document.createElement('div');
   gridLine50.className = 'chart-grid-line';
   gridLine50.style.bottom = '155px';
@@ -894,21 +894,43 @@ function renderPriceAnalytics() {
   gridLine100.style.bottom = '280px';
   chartContainer.appendChild(gridLine100);
   
-  // Generate bars
+  // ลูปสร้างแท่งกราฟแบบซ้อนกัน
   analysisData.forEach(item => {
     const wrapper = document.createElement('div');
     wrapper.className = 'chart-bar-wrapper';
     
-    const valPercent = Math.round((item.price / maxVal) * 100);
-    const barHeight = Math.max(5, Math.round(valPercent * 2.2)); // scaling factor
+    // คำนวณความสูงหลอดราคาปกติ (Main)
+    const mainPriceVal = item.mainPrice || item.price;
+    const mainPercent = Math.round((mainPriceVal / maxVal) * 100);
+    const mainBarHeight = Math.max(5, Math.round(mainPercent * 2.2));
     
-    let barClass = '';
-    if (item.price === cheapestPrice) barClass = 'cheapest';
-    else if (item.price === expensivePrice) barClass = 'expensive';
+    // คำนวณความสูงหลอดราคาโปรโมชั่น (Promo) (ถ้ามี)
+    let promoHtml = '';
+    if (item.promoPrice) {
+      const promoPercent = Math.round((item.promoPrice / maxVal) * 100);
+      const promoBarHeight = Math.max(5, Math.round(promoPercent * 2.2));
+      
+      promoHtml = `
+        <div class="chart-bar-promo-inside" style="height:${promoBarHeight}px;" title="ราคาโปรโมชั่น: ${Number(item.promoPrice).toLocaleString('th-TH')} บาท">
+          <span class="promo-inside-value">${Number(item.promoPrice).toLocaleString('th-TH')}</span>
+        </div>
+      `;
+    }
+    
+    let mainBarClass = '';
+    if (item.price === cheapestPrice) {
+      mainBarClass = 'cheapest';
+    } else if (item.price === expensivePrice) {
+      mainBarClass = 'expensive';
+    }
     
     wrapper.innerHTML = `
-      <span class="chart-bar-value">${Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-      <div class="chart-bar ${barClass}" style="height:${barHeight}px;" title="${item.hotel.name}: ${item.price} บาท"></div>
+      <span class="chart-bar-value">
+        ${Number(mainPriceVal).toLocaleString('th-TH')}
+      </span>
+      <div class="chart-bar ${mainBarClass}" style="height:${mainBarHeight}px; position: relative; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);" title="${item.hotel.name}: ราคาปกติ ${Number(mainPriceVal).toLocaleString('th-TH')} บาท">
+        ${promoHtml}
+      </div>
       <span class="chart-bar-label" title="${item.hotel.name}">${item.hotel.name}</span>
     `;
     chartContainer.appendChild(wrapper);

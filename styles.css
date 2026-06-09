@@ -1186,3 +1186,38 @@ tr:hover td {
   font-size: 13px;
   font-weight: 600;
 }
+
+/* จัดการตำแหน่งให้หลอดโปรโมชั่นซ้อนด้านในหลอดหลัก */
+.chart-bar {
+    position: relative;
+    display: flex;
+    align-items: flex-end; /* ให้หลอดโปรโตจากฐานเดียวกัน */
+    justify-content: center;
+    overflow: visible !important; /* ปล่อยให้ตัวเลขโปรโชว์ได้ */
+}
+
+/* สไตล์หลอดโปรโมชั่นตัวซ้อนด้านใน */
+.chart-bar-promo-inside {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+    border-top: 2px solid #60a5fa;
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* ตัวเลขราคาโปรโมชั่นสีฟ้าเรืองแสงบนแท่งซ้อน */
+.promo-inside-value {
+    position: absolute;
+    top: -18px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #63b3ed;
+    text-shadow: 0 0 4px rgba(0,0,0,0.8);
+    white-space: nowrap;
+}
