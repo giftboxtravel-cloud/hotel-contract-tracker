@@ -871,7 +871,7 @@ function renderPriceAnalytics() {
     });
   
   // Render Custom SVG-based Bar Chart (responsive)
-  const maxVal = Math.max(...analysisData.map(item => Math.max(item.mainPrice || 0, item.promoPrice || 0))) * 1.1 || 1000;
+  const maxVal = Math.max(...analysisData.map(item => Math.max(item.mainPrice || 0, item.promoPrice || 0))) * 1.1 || 15000;
   
   // Add chart grid lines & y-axis
 const yAxisDiv = document.createElement('div');
@@ -925,10 +925,10 @@ const yAxisDiv = document.createElement('div');
     }
     
     wrapper.innerHTML = `
-      <span class="chart-bar-value">
+      <span class="chart-bar-value" style="font-weight: 500; color: var(--text-secondary);">
         ${Number(mainPriceVal).toLocaleString('th-TH')}
       </span>
-      <div class="chart-bar ${mainBarClass}" style="height:${mainBarHeight}px; position: relative; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);" title="${item.hotel.name}: ราคาปกติ ${Number(mainPriceVal).toLocaleString('th-TH')} บาท">
+      <div class="chart-bar ${mainBarClass}" style="height:${mainBarHeight}px; position: relative; background: linear-gradient(180deg, rgba(139, 92, 246, 0.3) 0%, rgba(109, 40, 217, 0.5) 100%); border: 1px solid rgba(139, 92, 246, 0.6); border-radius: 4px 4px 0 0;" title="${item.hotel.name}: ราคาปกติ ${Number(mainPriceVal).toLocaleString('th-TH')} บาท">
         ${promoHtml}
       </div>
       <span class="chart-bar-label" title="${item.hotel.name}">${item.hotel.name}</span>
