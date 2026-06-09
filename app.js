@@ -1077,7 +1077,7 @@ function initFormListeners() {
     const cc = document.getElementById('hotel-sales-cc').value.trim();
     const lineId = document.getElementById('hotel-line-id').value.trim();
     
-    if (!name || !province || !area || !email) {
+    if (!name || !province || !area) {
       showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน', true);
       return;
     }
