@@ -1658,9 +1658,6 @@ window.viewHotelDetails = function(hotelId) {
     timeline.innerHTML = `<span style="font-size:12px;color:var(--text-muted);">ยังไม่มีประวัติการอัปโหลดหรือสร้างสัญญากับโรงแรมนี้</span>`;
   } else {
     hotelContracts.forEach(contract => {
-
-      console.log('CONTRACT =>', contract);
-      
       const status = calculateContractStatus(contract);
       const isMain = contract.type === 'main';
       const typeText = isMain ? 'Main Contract' : 'Promotion Rates';
@@ -1693,7 +1690,9 @@ window.viewHotelDetails = function(hotelId) {
             ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
           </div>
 
-          ${contract.stayStartDate && contract.stayEndDate ? `
+          ${contract.type === 'promo' &&
+            contract.stayStartDate &&
+            contract.stayEndDate ? `
           <div class="contract-timeline-stay">
             ช่วงเข้าพัก: ${formatDateThai(contract.stayStartDate)}
             ถึง
