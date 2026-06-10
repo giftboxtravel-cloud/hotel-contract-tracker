@@ -1687,7 +1687,12 @@ window.viewHotelDetails = function(hotelId) {
             ${statusBadge}
           </div>
           <div class="contract-timeline-dates">
-            ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
+            ${contract.type === 'promo'
+              ? 'ช่วงจอง'
+              : 'ระยะเวลา'}:
+            ${formatDateThai(contract.startDate)}
+            ถึง
+            ${formatDateThai(contract.endDate)}
           </div>
 
           ${contract.type === 'promo' &&
@@ -1702,8 +1707,8 @@ window.viewHotelDetails = function(hotelId) {
 
           <div class="contract-timeline-rate">
             ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
             })} บาท
           </div>
           <div class="contract-timeline-actions">
