@@ -1664,12 +1664,9 @@ tr:hover td {
   margin-bottom: 24px;
 }
 
-.contract-timeline-stay{
-    margin-top:6px;
-    margin-bottom:6px;
+.contract-timeline-dates{
+    color: var(--text-secondary);
     font-size:12px;
-    color:#38bdf8;
-    font-weight:600;
 }
 
 .contract-timeline-stay{
@@ -1681,3 +1678,4 @@ tr:hover td {
     color:#38bdf8;
     font-weight:600;
 }
+
