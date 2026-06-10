@@ -1658,6 +1658,9 @@ window.viewHotelDetails = function(hotelId) {
     timeline.innerHTML = `<span style="font-size:12px;color:var(--text-muted);">ยังไม่มีประวัติการอัปโหลดหรือสร้างสัญญากับโรงแรมนี้</span>`;
   } else {
     hotelContracts.forEach(contract => {
+
+      console.log('CONTRACT =>', contract);
+      
       const status = calculateContractStatus(contract);
       const isMain = contract.type === 'main';
       const typeText = isMain ? 'Main Contract' : 'Promotion Rates';
