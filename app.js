@@ -2,6 +2,84 @@
 // Mock current date as requested by local time: 2026-06-05
 const CURRENT_DATE = new Date('2026-06-05');
 
+// ============================================================
+// LOGIN SYSTEM
+// ============================================================
+const DEFAULT_PASSWORD = 'giftbox2026';
+const PASSWORD_STORAGE_KEY = 'app_pw_hash_v2';
+
+function simpleHash(str) {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function getStoredPasswordHash() {
+  return localStorage.getItem(PASSWORD_STORAGE_KEY) || simpleHash(DEFAULT_PASSWORD);
+}
+
+function checkLogin() {
+  return sessionStorage.getItem('is_logged_in') === 'true';
+}
+
+function initLoginSystem() {
+  const overlay = document.getElementById('login-overlay');
+  if (!overlay) return;
+  
+  // If already logged in this session, hide overlay
+  if (checkLogin()) {
+    overlay.style.display = 'none';
+    return;
+  }
+  
+  const form = document.getElementById('form-login');
+  const errorDiv = document.getElementById('login-error');
+  const pwInput = document.getElementById('login-password');
+  
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const password = pwInput.value;
+    const storedHash = getStoredPasswordHash();
+    
+    if (simpleHash(password) === storedHash) {
+      sessionStorage.setItem('is_logged_in', 'true');
+      overlay.style.opacity = '0';
+      overlay.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = ''; }, 400);
+      errorDiv.style.display = 'none';
+    } else {
+      errorDiv.style.display = 'block';
+      pwInput.value = '';
+      pwInput.focus();
+      // Shake animation
+      const box = overlay.querySelector('.login-box');
+      box.style.animation = 'none';
+      box.offsetHeight; // reflow
+      box.style.animation = 'shakeError 0.4s ease';
+    }
+  });
+}
+
+function initPasswordChangeListener() {
+  const btn = document.getElementById('btn-change-password');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const newPw = document.getElementById('new-password').value.trim();
+    const confirmPw = document.getElementById('confirm-password').value.trim();
+    if (!newPw) { showToast('กรุณากรอกรหัสผ่านใหม่', true); return; }
+    if (newPw.length < 6) { showToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', true); return; }
+    if (newPw !== confirmPw) { showToast('รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบใหม่', true); return; }
+    if (!confirm(`ยืนยันเปลี่ยนรหัสผ่านเป็น "${newPw}" ใช่หรือไม่?`)) return;
+    localStorage.setItem(PASSWORD_STORAGE_KEY, simpleHash(newPw));
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    showToast('เปลี่ยนรหัสผ่านสำเร็จ! ผู้ใช้ทุกคนต้องใช้รหัสใหม่ในการเข้าสู่ระบบครั้งต่อไป!');
+  });
+}
+
 // SQL Script template to create tables in Supabase Editor
 const SUPABASE_SQL_SETUP_SCRIPT = `-- 1. CREATE LOCATIONS TABLE
 CREATE TABLE IF NOT EXISTS locations (
@@ -107,6 +185,9 @@ let settingsState = {
 // Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    // 0. Init Login system FIRST (before any other UI)
+    initLoginSystem();
+    
     // 1. Initialize DB and Seed sample data if empty
     await initDB();
     await seedInitialData();
@@ -122,6 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFilterListeners();
     initBackupListeners();
     initCloudSettingsListeners();
+    initPasswordChangeListener();
+    initAIListeners();
     
     // 5. Render active view & indicators
     updateCloudStatusUI();
@@ -221,6 +304,10 @@ function initNavigation() {
         renderSettingsForm();
       } else if (targetPageId === 'page-analytics') {
         renderPriceAnalytics();
+      } else if (targetPageId === 'page-ai') {
+        // AI page: reset results
+        document.getElementById('ai-placeholder').style.display = 'flex';
+        document.getElementById('ai-results-section').style.display = 'none';
       }
     });
   });
@@ -280,8 +367,8 @@ function calculateContractStatus(contract) {
   const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
   
   if (contract.type === 'main') {
-    if (daysDiff <= 30 && daysDiff >= 0) {
-      return 'Expiring'; // Expiring within 30 days
+    if (daysDiff <= 45 && daysDiff >= 0) {
+      return 'Expiring'; // Expiring within 45 days
     }
   } else if (contract.type === 'promo') {
     if (daysDiff <= 7 && daysDiff >= 0) {
@@ -326,7 +413,8 @@ function populateSelectDropdowns() {
     document.getElementById('dash-filter-province'),
     document.getElementById('hotels-filter-province'),
     document.getElementById('analytics-filter-province'),
-    document.getElementById('hotel-province')
+    document.getElementById('hotel-province'),
+    document.getElementById('ai-filter-province')
   ];
   
   // Get distinct provinces
@@ -800,28 +888,24 @@ function renderPriceAnalytics() {
   const analysisData = areaHotels.map(hotel => {
     const rates = getHotelActiveRates(hotel.id);
     
-    // Choose active price (Promo rate takes precedence, else Main Contract rate)
-    let activePrice = null;
-    let priceType = '';
-    let statusText = 'ไม่มีสัญญา';
+    const mainPrice = rates.activeMainRate;
+    const promoPrice = rates.activePromoRate;
+    const activePrice = mainPrice || promoPrice;
     
-    if (rates.activePromoRate !== null) {
-      activePrice = rates.activePromoRate;
-      priceType = 'Promo';
-      statusText = 'โปรโมชั่น';
-    } else if (rates.activeMainRate !== null) {
-      activePrice = rates.activeMainRate;
-      priceType = 'Main';
-      statusText = 'ปกติ';
-    }
+    let priceType = promoPrice ? 'Promo' : (mainPrice ? 'Main' : '');
+    let statusText = promoPrice ? 'โปรโมชั่น' : (mainPrice ? 'ปกติ' : 'ไม่มีสัญญา');
+    
+    if (!activePrice) return null;
     
     return {
       hotel,
-      price: activePrice,
+      price: mainPrice || promoPrice,
+      mainPrice,
+      promoPrice,
       priceType,
       statusText
     };
-  }).filter(item => item.price !== null); // Ignore hotels with no active price
+  }).filter(item => item !== null);
   
   // Sort from cheapest to most expensive
   analysisData.sort((a, b) => a.price - b.price);
@@ -838,7 +922,7 @@ function renderPriceAnalytics() {
     const cheapestPrice = cheapestItem.price;
     const expensivePrice = expensiveItem.price;
 
-    const sumPrice = analysisData.reduce((sum, item) => sum + item.price, 0);
+    const sumPrice = analysisData.reduce((sum, item) => sum + (item.mainPrice || item.price), 0);
     const avgPrice = Math.round(sumPrice / analysisData.length);
 
     document.getElementById('analysis-cheapest-hotel').textContent = cheapestItem.hotel.name;
@@ -871,7 +955,7 @@ function renderPriceAnalytics() {
     });
   
   // Render Custom SVG-based Bar Chart (responsive)
-  const maxVal = Math.max(...analysisData.map(item => Math.max(item.mainPrice || 0, item.promoPrice || 0))) * 1.1 || 15000;
+  const maxVal = Math.max(...analysisData.map(item => Math.max(item.mainPrice || 0, item.promoPrice || 0))) * 1.1 || 1000;
   
   // Add chart grid lines & y-axis
 const yAxisDiv = document.createElement('div');
@@ -895,40 +979,46 @@ const yAxisDiv = document.createElement('div');
   chartContainer.appendChild(gridLine100);
   
   // ลูปสร้างแท่งกราฟแบบซ้อนกัน
-  analysisData.forEach(item => {
+  const total = analysisData.length;
+  analysisData.forEach((item, index) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'chart-bar-wrapper';
     
+    // คำนวณสีตามตำแหน่ง: ถูก=เขียว, กลาง=เหลือง, แพง=แดง
+    function getBarColorClass(idx, tot) {
+      const ratio = tot > 1 ? idx / (tot - 1) : 0;
+      if (ratio <= 0.25) return 'cheap';
+      if (ratio <= 0.55) return 'mid';
+      if (ratio <= 0.8) return 'pricey';
+      return 'expensive';
+    }
+    const barColorClass = getBarColorClass(index, total);
+    
     // คำนวณความสูงหลอดราคาปกติ (Main)
     const mainPriceVal = item.mainPrice || item.price;
-    const mainPercent = Math.round((mainPriceVal / maxVal) * 100);
-    const mainBarHeight = Math.max(5, Math.round(mainPercent * 2.2));
+    const maxVal2 = Math.max(...analysisData.map(d => Math.max(d.mainPrice || 0, d.promoPrice || 0, d.price || 0))) * 1.15 || 1000;
+    const mainPercent = Math.round((mainPriceVal / maxVal2) * 100);
+    const mainBarHeight = Math.max(8, Math.round(mainPercent * 2.2));
     
     // คำนวณความสูงหลอดราคาโปรโมชั่น (Promo) (ถ้ามี)
     let promoHtml = '';
-    if (item.promoPrice) {
-      const promoPercent = Math.round((item.promoPrice / maxVal) * 100);
+    const promoVal = item.promoPrice;
+    if (promoVal) {
+      const promoPercent = Math.round((promoVal / maxVal2) * 100);
       const promoBarHeight = Math.max(5, Math.round(promoPercent * 2.2));
       
       promoHtml = `
-        <div class="chart-bar-promo-inside" style="height:${promoBarHeight}px;" title="ราคาโปรโมชั่น: ${Number(item.promoPrice).toLocaleString('th-TH')} บาท">
-          <span class="promo-inside-value">${Number(item.promoPrice).toLocaleString('th-TH')}</span>
+        <div class="chart-bar-promo-inside" style="height:${promoBarHeight}px; opacity:0.85;" title="ราคาโปรโมชั่น: ${Number(promoVal).toLocaleString('th-TH')} บาท">
+          <span class="promo-inside-value">${Number(promoVal).toLocaleString('th-TH')}</span>
         </div>
       `;
     }
     
-    let mainBarClass = '';
-    if (item.price === cheapestPrice) {
-      mainBarClass = 'cheapest';
-    } else if (item.price === expensivePrice) {
-      mainBarClass = 'expensive';
-    }
-    
     wrapper.innerHTML = `
-      <span class="chart-bar-value" style="font-weight: 500; color: var(--text-secondary);">
+      <span class="chart-bar-value" style="font-weight: 600; color: var(--text-secondary);">
         ${Number(mainPriceVal).toLocaleString('th-TH')}
       </span>
-      <div class="chart-bar ${mainBarClass}" style="height:${mainBarHeight}px; position: relative; background: linear-gradient(180deg, rgba(139, 92, 246, 0.3) 0%, rgba(109, 40, 217, 0.5) 100%); border: 1px solid rgba(139, 92, 246, 0.6); border-radius: 4px 4px 0 0;" title="${item.hotel.name}: ราคาปกติ ${Number(mainPriceVal).toLocaleString('th-TH')} บาท">
+      <div class="chart-bar ${barColorClass}" style="height:${mainBarHeight}px; position: relative;" title="${item.hotel.name}: ${Number(mainPriceVal).toLocaleString('th-TH')} บาท">
         ${promoHtml}
       </div>
       <span class="chart-bar-label" title="${item.hotel.name}">${item.hotel.name}</span>
@@ -1144,6 +1234,19 @@ function initFormListeners() {
   let contractAttachedFileName = null;
   let contractAttachedFileType = null;
   
+  // Show/hide Stay Date section based on contract type
+  const contractTypeSelect = document.getElementById('contract-type');
+  const stayDateSection = document.getElementById('stay-date-section');
+  contractTypeSelect.addEventListener('change', () => {
+    if (contractTypeSelect.value === 'promo') {
+      stayDateSection.classList.add('visible');
+    } else {
+      stayDateSection.classList.remove('visible');
+      document.getElementById('contract-stay-start').value = '';
+      document.getElementById('contract-stay-end').value = '';
+    }
+  });
+  
   // Drag zone file drop listeners
   const dropzone = document.getElementById('contract-file-dropzone');
   const fileInput = document.getElementById('contract-file');
@@ -1169,15 +1272,64 @@ function initFormListeners() {
     }
   });
   
+  // Image compression via Canvas API
+  function compressImage(file, callback) {
+    const maxDim = 1600;
+    const quality = 0.72;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        let w = img.width, h = img.height;
+        if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedData = canvas.toDataURL('image/jpeg', quality);
+        // Rename to .jpg if needed
+        const newName = file.name.replace(/\.(png|webp|bmp|gif)$/i, '.jpg');
+        callback(compressedData, newName);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  
   function handleContractFileSelect(file) {
     if (!file) return;
     
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+    
+    // PDF size check: reject if > 2MB
+    if (isPdf && file.size > 2 * 1024 * 1024) {
+      document.getElementById('pdf-warning-popup').classList.add('active');
+      document.getElementById('contract-file').value = '';
+      return;
+    }
+    
+    // Auto-compress images
+    if (isImage) {
+      showToast('กำลังบีบอัดรูปภาพอัตโนมัติ...');
+      compressImage(file, (compressedData, newName) => {
+        contractAttachedFileBase64 = compressedData;
+        contractAttachedFileName = newName;
+        contractAttachedFileType = 'image/jpeg';
+        document.getElementById('contract-uploaded-file-name').textContent = `${newName} (บีบอัดแล้ว)`;
+        document.getElementById('contract-uploaded-file-info').style.display = 'flex';
+        showToast('แนบไฟล์สัญญาและบีบอัดอัตโนมัติแล้ว!');
+      });
+      return;
+    }
+    
+    // Normal read (for PDF <= 2MB)
     const reader = new FileReader();
     reader.onload = function(event) {
       contractAttachedFileBase64 = event.target.result;
       contractAttachedFileName = file.name;
       contractAttachedFileType = file.type;
-      
       document.getElementById('contract-uploaded-file-name').textContent = file.name;
       document.getElementById('contract-uploaded-file-info').style.display = 'flex';
       showToast('แนบไฟล์สัญญาห้องพักแล้ว!');
@@ -1205,6 +1357,8 @@ function initFormListeners() {
     const rate = parseFloat(document.getElementById('contract-rate').value);
     const startDate = document.getElementById('contract-start').value;
     const endDate = document.getElementById('contract-end').value;
+    const stayStartDate = document.getElementById('contract-stay-start').value;
+    const stayEndDate = document.getElementById('contract-stay-end').value;
     
     if (!startDate || !endDate || isNaN(rate)) {
       showToast('กรุณากรอกระยะเวลาสัญญาและราคาเริ่มต้น', true);
@@ -1222,6 +1376,8 @@ function initFormListeners() {
       type,
       startDate,
       endDate,
+      stayStartDate: stayStartDate || '',
+      stayEndDate: stayEndDate || '',
       baseRate: rate,
       fileName: contractAttachedFileName || '',
       fileData: contractAttachedFileBase64 || '',
@@ -1238,11 +1394,11 @@ function initFormListeners() {
     contractAttachedFileName = null;
     contractAttachedFileType = null;
     document.getElementById('contract-uploaded-file-info').style.display = 'none';
+    document.getElementById('stay-date-section').classList.remove('visible');
     
     closeModal('modal-contract');
     
-    // Refresh parent view if active
-    viewHotelDetails(hotelId);
+    // Just refresh data — do NOT reopen hotel-details modal
     renderHotelsList();
     renderDashboard();
     
@@ -1514,7 +1670,7 @@ window.viewHotelDetails = function(hotelId) {
       }
       
       const fileLink = contract.fileData 
-        ? `<button class="btn btn-secondary btn-icon" onclick="downloadBase64File('${contract.fileData}', '${contract.fileName}')" title="ดาวน์โหลดไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg></button>`
+        ? `<button class="btn btn-secondary btn-icon" onclick="viewBase64File('${contract.fileData}', '${contract.fileName}')" title="ดูไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>`
         : `<span style="font-size:11px;color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
         
       const item = document.createElement('div');
@@ -1786,3 +1942,317 @@ function formatDateThai(dateStr) {
   
   return `${day} ${month} ${year}`;
 }
+
+// ============================================================
+// FILE VIEWER (Eye Icon)
+// ============================================================
+window.viewBase64File = function(base64Data, filename) {
+  if (!base64Data) {
+    showToast('ไม่มีไฟล์ข้อมูลในระบบ', true);
+    return;
+  }
+  
+  const viewer = document.getElementById('file-viewer-overlay');
+  const titleEl = document.getElementById('file-viewer-title');
+  const contentEl = document.getElementById('file-viewer-content');
+  const downloadBtn = document.getElementById('btn-file-viewer-download');
+  
+  titleEl.textContent = filename || 'ไฟล์แนบสัญญา';
+  contentEl.innerHTML = '';
+  
+  // Set up download button
+  downloadBtn.onclick = () => downloadBase64File(base64Data, filename);
+  
+  // Determine MIME type
+  const mimeType = base64Data.split(';')[0].split(':')[1] || '';
+  
+  if (mimeType === 'application/pdf') {
+    try {
+      const byteString = atob(base64Data.split(',')[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
+      const blob = new Blob([ab], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const iframe = document.createElement('iframe');
+      iframe.src = blobUrl + '#toolbar=1&navpanes=1';
+      iframe.style.cssText = 'width:100%;height:100%;min-height:640px;border:none;';
+      contentEl.appendChild(iframe);
+    } catch(e) {
+      // Fallback
+      const iframe = document.createElement('iframe');
+      iframe.src = base64Data;
+      iframe.style.cssText = 'width:100%;height:100%;min-height:640px;border:none;';
+      contentEl.appendChild(iframe);
+    }
+  } else if (mimeType.startsWith('image/')) {
+    const img = document.createElement('img');
+    img.src = base64Data;
+    img.alt = filename;
+    contentEl.appendChild(img);
+  } else {
+    contentEl.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-secondary);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:48px;height:48px;stroke:var(--text-muted);display:block;margin:0 auto 16px;">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+      ไม่สามารถแสดงตัวอย่างไฟล์ประเภทนี้ได้<br>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="downloadBase64File('${base64Data}', '${filename}')">ดาวน์โหลดไฟล์แทน</button>
+    </div>`;
+  }
+  
+  viewer.classList.add('active');
+};
+
+window.closeFileViewer = function() {
+  document.getElementById('file-viewer-overlay').classList.remove('active');
+  document.getElementById('file-viewer-content').innerHTML = '';
+};
+
+// ============================================================
+// PDF SIZE WARNING POPUP
+// ============================================================
+window.closePdfWarning = function() {
+  document.getElementById('pdf-warning-popup').classList.remove('active');
+};
+
+// ============================================================
+// DOWNLOAD ALL DOCS (Email Modal)
+// ============================================================
+function initDownloadAllDocsListener() {
+  const btn = document.getElementById('btn-download-all-docs');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const docs = settingsState.companyDocs || [];
+    if (docs.length === 0) {
+      showToast('ยังไม่มีเอกสารบริษัทในระบบ กรุณาเพิ่มในหน้าตั้งค่า', true);
+      return;
+    }
+    docs.forEach((doc, idx) => {
+      setTimeout(() => {
+        downloadBase64File(doc.data, doc.name);
+      }, idx * 400); // Stagger downloads
+    });
+    showToast(`ดาวน์โหลดไฟล์ทั้งหมด ${docs.length} ไฟล์แล้ว!`);
+  });
+}
+
+// ============================================================
+// AI HOTEL INSIGHTS
+// ============================================================
+function initAIListeners() {
+  initDownloadAllDocsListener();
+  
+  const analyzeBtn = document.getElementById('btn-ai-analyze');
+  if (!analyzeBtn) return;
+  
+  analyzeBtn.addEventListener('click', () => {
+    const province = document.getElementById('ai-filter-province').value;
+    const type = document.getElementById('ai-hotel-type').value;
+    const stars = document.getElementById('ai-hotel-stars').value;
+    
+    if (!province) {
+      showToast('กรุณาเลือกจังหวัดก่อน', true);
+      return;
+    }
+    
+    renderAIInsights(province, type, stars);
+  });
+}
+
+function renderAIInsights(province, type, stars) {
+  const placeholder = document.getElementById('ai-placeholder');
+  const resultsSection = document.getElementById('ai-results-section');
+  const grid = document.getElementById('ai-insight-grid');
+  const provinceBadge = document.getElementById('ai-result-province-badge');
+  const existingTbody = document.getElementById('ai-existing-tbody');
+  const existingCount = document.getElementById('ai-existing-count');
+  
+  placeholder.style.display = 'none';
+  resultsSection.style.display = 'block';
+  provinceBadge.textContent = province;
+  
+  // Build search cards based on type
+  const searchTemplates = buildSearchTemplates(province, type, stars);
+  
+  grid.innerHTML = '';
+  searchTemplates.forEach(card => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'ai-hotel-card';
+    
+    const linksHtml = card.links.map(link => `
+      <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="ai-search-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        ${link.label}
+      </a>
+    `).join('');
+    
+    cardEl.innerHTML = `
+      <div class="ai-hotel-tag ${card.tagClass}">${card.tag}</div>
+      <div class="ai-hotel-name">${card.title}</div>
+      <div class="ai-hotel-desc">${card.desc}</div>
+      <div class="ai-search-links">${linksHtml}</div>
+    `;
+    grid.appendChild(cardEl);
+  });
+  
+  // Show existing hotels in province
+  const existingHotels = hotelsState.filter(h => h.province === province);
+  existingCount.textContent = `${existingHotels.length} โรงแรม`;
+  existingTbody.innerHTML = '';
+  
+  if (existingHotels.length === 0) {
+    existingTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">ยังไม่มีโรงแรมในจังหวัด ${province} ในระบบ</td></tr>`;
+  } else {
+    existingHotels.forEach(hotel => {
+      const rates = getHotelActiveRates(hotel.id);
+      const tr = document.createElement('tr');
+      const rateText = rates.activeMainRate ? `${Number(rates.activeMainRate).toLocaleString('th-TH')} บ.` : '-';
+      const contractStatus = rates.activeMainRate ? `<span class="badge badge-success">แอคทีฟ</span>` : `<span class="badge badge-danger">ไม่มีสัญญา</span>`;
+      tr.innerHTML = `
+        <td class="hotel-name-cell">${hotel.name}</td>
+        <td>${'★'.repeat(hotel.stars)}</td>
+        <td>${hotel.area}</td>
+        <td style="font-weight:600;">${rateText}</td>
+        <td>${contractStatus}</td>
+      `;
+      existingTbody.appendChild(tr);
+    });
+  }
+}
+
+function buildSearchTemplates(province, type, stars) {
+  const starsLabel = stars ? `${stars} ดาว` : '';
+  const starsQuery = stars ? `${stars} star` : '';
+  const encodeProv = encodeURIComponent(province);
+  
+  const templates = [];
+  
+  // Template 1: Newly opened hotels
+  if (type === 'all' || type === 'new') {
+    templates.push({
+      tagClass: 'new',
+      tag: '✨ เปิดใหม่',
+      title: `โรงแรมเปิดใหม่ใน${province} ${starsLabel}`,
+      desc: `ค้นหาโรงแรมที่เพิ่งเปิดตัวใน${province} ในปี 2024-2026 เพื่อติดต่อขอสัญญาอัตราห้องพัก`,
+      links: [
+        {
+          label: 'Google Search',
+          url: `https://www.google.com/search?q=โรงแรมเปิดใหม่+${encodeProv}+${starsQuery}+2025+2026`
+        },
+        {
+          label: 'Agoda',
+          url: `https://www.agoda.com/th-th/search?city=${encodeProv}&sort=ranking&filters=new`
+        },
+        {
+          label: 'Booking.com',
+          url: `https://www.booking.com/searchresults.th.html?ss=${encodeProv}&order=class`
+        }
+      ]
+    });
+  }
+  
+  // Template 2: Trending/popular hotels
+  if (type === 'all' || type === 'trending') {
+    templates.push({
+      tagClass: 'trending',
+      tag: '🔥 กำลังมาแรง',
+      title: `โรงแรมยอดนิยม Trending ใน${province}`,
+      desc: `ค้นหาโรงแรมที่กำลังได้รับความนิยมและมีรีวิวดีใน${province} ในช่วงนี้`,
+      links: [
+        {
+          label: 'Google Trends',
+          url: `https://www.google.com/search?q=โรงแรมยอดนิยม+${encodeProv}+2025+${starsQuery}`
+        },
+        {
+          label: 'TripAdvisor',
+          url: `https://www.tripadvisor.com/Search?q=${encodeProv}+hotel+${starsQuery}`
+        },
+        {
+          label: 'Pantip',
+          url: `https://pantip.com/search?q=โรงแรม+${encodeProv}+แนะนำ`
+        }
+      ]
+    });
+  }
+  
+  // Template 3: Recently renovated
+  if (type === 'all' || type === 'renovated') {
+    templates.push({
+      tagClass: 'renovated',
+      tag: '🔨 รีโนเวทใหม่',
+      title: `โรงแรมปรับปรุงใหม่ใน${province}`,
+      desc: `ค้นหาโรงแรมที่เพิ่งรีโนเวทหรือปรับปรุงใน${province} ซึ่งมักจะมีราคาสัญญาที่น่าสนใจ`,
+      links: [
+        {
+          label: 'Google Search',
+          url: `https://www.google.com/search?q=โรงแรม+รีโนเวท+${encodeProv}+2025+${starsQuery}`
+        },
+        {
+          label: 'Facebook',
+          url: `https://www.facebook.com/search/pages/?q=โรงแรม${encodeProv}รีโนเวท`
+        }
+      ]
+    });
+  }
+  
+  // Template 4: Not in system yet (compare with existing)
+  const existingNames = hotelsState.filter(h => h.province === province).map(h => h.name);
+  templates.push({
+    tagClass: 'popular',
+    tag: '📊 ยังไม่มีในระบบ',
+    title: `ค้นหาโรงแรมใน${province}ที่ยังไม่ได้ทำสัญญา`,
+    desc: `มีโรงแรมใน${province} ในระบบ ${existingNames.length} แห่งแล้ว ลองค้นหาโรงแรมอื่นๆ ที่ยังไม่ได้ทำสัญญากับเรา`,
+    links: [
+      {
+        label: 'Google Maps',
+        url: `https://www.google.com/maps/search/โรงแรม+${encodeProv}+${starsQuery}`
+      },
+      {
+        label: 'Expedia TH',
+        url: `https://www.expedia.co.th/Hotels-${encodeProv}.d.Travel-Guide-Hotels`
+      },
+      {
+        label: 'Hotels.com',
+        url: `https://th.hotels.com/search.do?q-destination=${encodeProv}`
+      }
+    ]
+  });
+  
+  // Template 5: Room rate research
+  templates.push({
+    tagClass: 'trending',
+    tag: '💰 วิเคราะห์ราคา',
+    title: `ราคาห้องพักโรงแรมใน${province}`,
+    desc: `เปรียบเทียบราคาห้องพัก${starsLabel}ใน${province} เพื่อวิเคราะห์ระดับราคาที่เหมาะสมในการเจรจาสัญญา`,
+    links: [
+      {
+        label: 'Google Hotels',
+        url: `https://www.google.com/travel/hotels/${encodeProv}`
+      },
+      {
+        label: 'Agoda ราคา',
+        url: `https://www.agoda.com/th-th/search?city=${encodeProv}&sort=price&star=${stars || ''}`
+      }
+    ]
+  });
+  
+  return templates;
+}
+
+// Add shake animation to CSS dynamically
+(function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
