@@ -109,6 +109,10 @@ CREATE TABLE IF NOT EXISTS contracts (
   type TEXT NOT NULL CHECK (type IN ('main', 'promo')),
   startDate TEXT NOT NULL,
   endDate TEXT NOT NULL,
+
+  stayStartDate TEXT,
+  stayEndDate TEXT,
+
   baseRate INTEGER NOT NULL,
   fileName TEXT,
   fileData TEXT,
@@ -1685,8 +1689,20 @@ window.viewHotelDetails = function(hotelId) {
           <div class="contract-timeline-dates">
             ระยะเวลา: ${formatDateThai(contract.startDate)} ถึง ${formatDateThai(contract.endDate)}
           </div>
+
+          ${contract.stayStartDate && contract.stayEndDate ? `
+          <div class="contract-timeline-stay">
+            ช่วงเข้าพัก: ${formatDateThai(contract.stayStartDate)}
+            ถึง
+            ${formatDateThai(contract.stayEndDate)}
+          </div>
+          ` : ''}
+
           <div class="contract-timeline-rate">
-            ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+            ราคาห้องเริ่มต้น: ${Number(contract.baseRate).toLocaleString('th-TH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })} บาท
           </div>
           <div class="contract-timeline-actions">
             ${fileLink}

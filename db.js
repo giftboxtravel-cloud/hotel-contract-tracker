@@ -298,8 +298,13 @@ async function seedInitialData() {
       id: 'contract-1a',
       hotelId: 'hotel-1',
       type: 'main',
+
       startDate: '2026-01-01',
       endDate: '2026-12-31',
+
+      stayStartDate: '2026-01-01',
+      stayEndDate: '2026-12-31',
+
       baseRate: 2500,
       fileName: 'main_contract_aonang_cliff_2026.pdf',
       fileData: 'data:application/pdf;base64,JVBERi0xLjQKJdPr6gogMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PiBlbmRvYmoKMiAwIG9iagogIDw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbIDMgMCBSIF0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogCiAgPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWyAwIDAgNTk1IDg0MiBdID4+IGVuZG9iagp0cmFpbGVyCiAgPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgolJUVPRgo=',
@@ -310,8 +315,13 @@ async function seedInitialData() {
       id: 'contract-1b',
       hotelId: 'hotel-1',
       type: 'promo',
+
       startDate: '2026-05-01',
       endDate: '2026-06-10',
+
+      stayStartDate: '2026-06-15',
+      stayEndDate: '2026-10-31',
+
       baseRate: 1800,
       fileName: 'promo_green_season_aonang.pdf',
       fileData: 'data:application/pdf;base64,JVBERi0xLjQKJdPr6gogMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PiBlbmRvYmoKMiAwIG9iagogIDw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbIDMgMCBSIF0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogCiAgPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWyAwIDAgNTk1IDg0MiBdID4+IGVuZG9iagp0cmFpbGVyCiAgPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgolJUVPRgo=',
