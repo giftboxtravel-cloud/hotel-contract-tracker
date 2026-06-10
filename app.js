@@ -1637,7 +1637,21 @@ window.viewHotelDetails = function(hotelId) {
   const hotelContracts = contractsState.filter(c => c.hotelId === hotelId);
   
   // Sort contracts: newer start date first
-  hotelContracts.sort((a, b) => b.startDate.localeCompare(a.startDate));
+  hotelContracts.sort((a, b) => {
+
+    const dateCompare = b.startDate.localeCompare(a.startDate);
+
+    if (dateCompare !== 0) {
+        return dateCompare;
+    }
+
+    if (a.type === b.type) return 0;
+
+    if (a.type === 'main') return -1;
+    if (b.type === 'main') return 1;
+
+    return 0;
+});
   
   // Set modal text info
   document.getElementById('detail-hotel-name').textContent = hotel.name;
