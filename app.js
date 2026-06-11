@@ -1,3 +1,26 @@
+
+function initTheme() {
+  const btn = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
+  function updateThemeButton() {
+    if (!btn) return;
+    btn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  }
+
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      btn.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    });
+  }
+  updateThemeButton();
+}
+
 // app.js - Main Application Logic for Hotel Contract Rate Tracker
 // Mock current date as requested by local time: 2026-06-05
 const CURRENT_DATE = new Date('2026-06-05');
@@ -189,6 +212,7 @@ let settingsState = {
 // Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    initTheme();
     // 0. Init Login system FIRST (before any other UI)
     initLoginSystem();
     
