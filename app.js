@@ -31,9 +31,19 @@ const CURRENT_DATE = new Date('2026-06-05');
 
 // Account definitions — Admin can delete; Operator cannot
 const ACCOUNTS = [
-  { username: 'admin',    passwordKey: 'pw_admin_v1',    defaultPw: 'giftbox2026',  role: 'admin' },
-  { username: 'operator', passwordKey: 'pw_operator_v1', defaultPw: 'giftbox0p3r', role: 'operator' },
+  { username: 'admin',    passwordKey: 'pw_admin_v3',    defaultPw: 'giftbox2026',  role: 'admin' },
+  { username: 'operator', passwordKey: 'pw_operator_v3', defaultPw: 'giftbox0p3r', role: 'operator' },
 ];
+
+// Clear any stale password keys from previous versions
+(function clearLegacyKeys() {
+  const staleKeys = [
+    'app_pw_hash_v2', 'app_pw_hash_v1',
+    'pw_admin_v1', 'pw_operator_v1',
+    'pw_admin_v2', 'pw_operator_v2',
+  ];
+  staleKeys.forEach(k => localStorage.removeItem(k));
+})();
 
 function simpleHash(str) {
   let hash = 5381;
