@@ -26,10 +26,14 @@ function initTheme() {
 const CURRENT_DATE = new Date('2026-06-05');
 
 // ============================================================
-// LOGIN SYSTEM
+// LOGIN SYSTEM — Dual-role (Admin / Operator)
 // ============================================================
-const DEFAULT_PASSWORD = 'giftbox2026';
-const PASSWORD_STORAGE_KEY = 'app_pw_hash_v2';
+
+// Account definitions — Admin can delete; Operator cannot
+const ACCOUNTS = [
+  { username: 'admin',    passwordKey: 'pw_admin_v1',    defaultPw: 'giftbox2026',  role: 'admin' },
+  { username: 'operator', passwordKey: 'pw_operator_v1', defaultPw: 'giftbox0p3r', role: 'operator' },
+];
 
 function simpleHash(str) {
   let hash = 5381;
@@ -40,50 +44,79 @@ function simpleHash(str) {
   return (hash >>> 0).toString(16);
 }
 
-function getStoredPasswordHash() {
-  return localStorage.getItem(PASSWORD_STORAGE_KEY) || simpleHash(DEFAULT_PASSWORD);
+function getAccountHash(account) {
+  return localStorage.getItem(account.passwordKey) || simpleHash(account.defaultPw);
 }
 
 function checkLogin() {
   return sessionStorage.getItem('is_logged_in') === 'true';
 }
 
+function isAdmin() {
+  return sessionStorage.getItem('user_role') === 'admin';
+}
+
+function getCurrentRole() {
+  return sessionStorage.getItem('user_role') || 'operator';
+}
+
 function initLoginSystem() {
   const overlay = document.getElementById('login-overlay');
   if (!overlay) return;
-  
-  // If already logged in this session, hide overlay
+
   if (checkLogin()) {
     overlay.style.display = 'none';
+    applyRoleUI();
     return;
   }
-  
+
   const form = document.getElementById('form-login');
   const errorDiv = document.getElementById('login-error');
   const pwInput = document.getElementById('login-password');
-  
+  const usernameInput = document.getElementById('login-username');
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    const username = (usernameInput ? usernameInput.value.trim().toLowerCase() : 'admin');
     const password = pwInput.value;
-    const storedHash = getStoredPasswordHash();
-    
-    if (simpleHash(password) === storedHash) {
+
+    const account = ACCOUNTS.find(a => a.username === username);
+    if (account && simpleHash(password) === getAccountHash(account)) {
       sessionStorage.setItem('is_logged_in', 'true');
+      sessionStorage.setItem('user_role', account.role);
+      sessionStorage.setItem('username', account.username);
       overlay.style.opacity = '0';
       overlay.style.transition = 'opacity 0.4s ease';
-      setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = ''; }, 400);
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.style.opacity = '';
+        applyRoleUI();
+      }, 400);
       errorDiv.style.display = 'none';
     } else {
       errorDiv.style.display = 'block';
       pwInput.value = '';
       pwInput.focus();
-      // Shake animation
       const box = overlay.querySelector('.login-box');
       box.style.animation = 'none';
-      box.offsetHeight; // reflow
+      box.offsetHeight;
       box.style.animation = 'shakeError 0.4s ease';
     }
   });
+}
+
+// Apply role-based UI visibility after login
+function applyRoleUI() {
+  const role = getCurrentRole();
+  // Show/hide role badge in sidebar
+  const roleBadge = document.getElementById('role-badge');
+  if (roleBadge) {
+    roleBadge.textContent = role === 'admin' ? '👑 Admin' : '👤 Operator';
+    roleBadge.className = role === 'admin' ? 'role-badge role-admin' : 'role-badge role-operator';
+  }
+  // Show change-password section only for the matching account
+  const pwSection = document.getElementById('password-change-section');
+  if (pwSection) pwSection.style.display = 'block';
 }
 
 function initPasswordChangeListener() {
@@ -95,11 +128,14 @@ function initPasswordChangeListener() {
     if (!newPw) { showToast('กรุณากรอกรหัสผ่านใหม่', true); return; }
     if (newPw.length < 6) { showToast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', true); return; }
     if (newPw !== confirmPw) { showToast('รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบใหม่', true); return; }
-    if (!confirm(`ยืนยันเปลี่ยนรหัสผ่านเป็น "${newPw}" ใช่หรือไม่?`)) return;
-    localStorage.setItem(PASSWORD_STORAGE_KEY, simpleHash(newPw));
+    const username = sessionStorage.getItem('username') || 'admin';
+    const account = ACCOUNTS.find(a => a.username === username);
+    if (!account) return;
+    if (!confirm(`ยืนยันเปลี่ยนรหัสผ่านของบัญชี "${username}" ใช่หรือไม่?`)) return;
+    localStorage.setItem(account.passwordKey, simpleHash(newPw));
     document.getElementById('new-password').value = '';
     document.getElementById('confirm-password').value = '';
-    showToast('เปลี่ยนรหัสผ่านสำเร็จ! ผู้ใช้ทุกคนต้องใช้รหัสใหม่ในการเข้าสู่ระบบครั้งต่อไป!');
+    showToast(`เปลี่ยนรหัสผ่านบัญชี "${username}" สำเร็จ!`);
   });
 }
 
@@ -794,9 +830,10 @@ function renderHotelsList() {
           <button class="btn btn-secondary btn-icon" onclick="editHotel('${hotel.id}')" title="แก้ไขโปรไฟล์">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>
-          <button class="btn btn-danger btn-icon" onclick="deleteHotelClick('${hotel.id}')" title="ลบโรงแรม">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          </button>
+          ${isAdmin()
+            ? `<button class="btn btn-danger btn-icon" onclick="deleteHotelClick('${hotel.id}')" title="ลบโรงแรม (Admin)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`
+            : `<span class="btn-lock-hint" title="เฉพาะ Admin ลบได้">🔒</span>`
+          }
         </div>
       </td>
     `;
@@ -820,9 +857,9 @@ function renderLocationsList() {
       <td style="font-weight:600;">${loc.province}</td>
       <td>${loc.area}</td>
       <td>
-        <button class="btn btn-danger btn-icon" onclick="deleteLocationClick('${loc.id}')" title="ลบพื้นที่ย่อย">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-        </button>
+        ${isAdmin()
+          ? `<button class="btn btn-danger btn-icon" onclick="deleteLocationClick('${loc.id}')" title="ลบพื้นที่ย่อย (Admin)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`
+          : `<span class="btn-lock-hint" title="เฉพาะ Admin ลบได้">🔒</span>`}
       </td>
     `;
     tbody.appendChild(tr);
@@ -1376,10 +1413,11 @@ function initFormListeners() {
     showToast('เอาไฟล์แนบออกแล้ว');
   });
   
-  // Submit new contract form
+  // Submit new/edit contract form
   formContract.addEventListener('submit', async (event) => {
     event.preventDefault();
     
+    const contractId = document.getElementById('contract-id').value;
     const hotelId = document.getElementById('contract-hotel-id').value;
     const type = document.getElementById('contract-type').value;
     const rate = parseFloat(document.getElementById('contract-rate').value);
@@ -1397,9 +1435,18 @@ function initFormListeners() {
       showToast('วันที่สิ้นสุดสัญญาต้องไม่อยู่ก่อนหน้าวันเริ่มต้น', true);
       return;
     }
+
+    // Resolve file: new upload > existing file (edit mode) > empty
+    const existingFile = window._editContractExistingFile;
+    const resolvedFileData = contractAttachedFileBase64 || (existingFile ? existingFile.data : '');
+    const resolvedFileName = contractAttachedFileName || (existingFile ? existingFile.name : '');
+    const resolvedFileType = contractAttachedFileType || (existingFile ? existingFile.type : '');
     
-    const newContract = {
-      id: 'contract-' + Date.now(),
+    // Preserve renewalStatus if editing
+    const existingContract = contractId ? contractsState.find(c => c.id === contractId) : null;
+
+    const contractData = {
+      id: contractId || 'contract-' + Date.now(),
       hotelId,
       type,
       startDate,
@@ -1407,13 +1454,14 @@ function initFormListeners() {
       stayStartDate: stayStartDate || '',
       stayEndDate: stayEndDate || '',
       baseRate: rate,
-      fileName: contractAttachedFileName || '',
-      fileData: contractAttachedFileBase64 || '',
-      fileType: contractAttachedFileType || '',
-      status: 'Active'
+      fileName: resolvedFileName,
+      fileData: resolvedFileData,
+      fileType: resolvedFileType,
+      status: 'Active',
+      renewalStatus: existingContract ? (existingContract.renewalStatus || 'pending') : 'pending',
     };
     
-    await putItem('contracts', newContract);
+    await putItem('contracts', contractData);
     await refreshState();
     
     // Reset
@@ -1421,16 +1469,17 @@ function initFormListeners() {
     contractAttachedFileBase64 = null;
     contractAttachedFileName = null;
     contractAttachedFileType = null;
+    window._editContractExistingFile = null;
     document.getElementById('contract-uploaded-file-info').style.display = 'none';
     document.getElementById('stay-date-section').classList.remove('visible');
+    document.getElementById('contract-modal-title').textContent = 'สร้างสัญญาค่าห้องพักใหม่';
+    document.getElementById('contract-id').value = '';
     
     closeModal('modal-contract');
-    
-    // Just refresh data — do NOT reopen hotel-details modal
     renderHotelsList();
     renderDashboard();
     
-    showToast('สร้างสัญญาค่าห้องพักใหม่เข้าระบบสำเร็จ!');
+    showToast(contractId ? 'อัปเดตสัญญาห้องพักสำเร็จ!' : 'สร้างสัญญาค่าห้องพักใหม่เข้าระบบสำเร็จ!');
   });
   
   // 4. Form: Settings
@@ -1714,6 +1763,16 @@ window.viewHotelDetails = function(hotelId) {
       const fileLink = contract.fileData 
         ? `<button class="btn btn-secondary btn-icon" onclick="viewBase64File('${contract.fileData}', '${contract.fileName}')" title="ดูไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>`
         : `<span style="font-size:11px;color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
+
+      const editBtn = `<button class="btn btn-secondary btn-icon" onclick="editContract('${contract.id}', '${hotel.id}')" title="แก้ไขสัญญา" style="color:var(--accent-blue);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+      </button>`;
+
+      const deleteBtn = isAdmin()
+        ? `<button class="btn btn-danger btn-icon" onclick="deleteContractClick('${contract.id}', '${hotel.id}')" title="ลบสัญญา (Admin)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>`
+        : `<span class="btn-lock-hint" title="เฉพาะ Admin ลบได้">🔒</span>`;
         
       const item = document.createElement('div');
       item.className = 'contract-timeline-item';
@@ -1751,9 +1810,8 @@ window.viewHotelDetails = function(hotelId) {
           </div>
           <div class="contract-timeline-actions">
             ${fileLink}
-            <button class="btn btn-danger btn-icon" onclick="deleteContractClick('${contract.id}', '${hotel.id}')" title="ลบสัญญา">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
+            ${editBtn}
+            ${deleteBtn}
           </div>
         </div>
       `;
@@ -1804,8 +1862,56 @@ window.viewHotelDetails = function(hotelId) {
   openModal('modal-hotel-details');
 };
 
-// Edit Hotel profile
-window.editHotel = function(hotelId) {
+// Edit existing Contract
+window.editContract = function(contractId, hotelId) {
+  const contract = contractsState.find(c => c.id === contractId);
+  const hotel = hotelsState.find(h => h.id === hotelId);
+  if (!contract || !hotel) return;
+
+  // Set modal to edit mode
+  document.getElementById('contract-modal-title').textContent = 'แก้ไขสัญญาห้องพัก';
+  document.getElementById('contract-id').value = contract.id;
+  document.getElementById('contract-hotel-id').value = hotel.id;
+  document.getElementById('contract-hotel-display-name').textContent = hotel.name;
+
+  // Populate form fields
+  document.getElementById('contract-type').value = contract.type;
+  document.getElementById('contract-rate').value = contract.baseRate;
+  document.getElementById('contract-start').value = contract.startDate;
+  document.getElementById('contract-end').value = contract.endDate;
+
+  // Handle promo stay dates
+  const staySection = document.getElementById('stay-date-section');
+  if (contract.type === 'promo') {
+    staySection.classList.add('visible');
+    document.getElementById('contract-stay-start').value = contract.stayStartDate || '';
+    document.getElementById('contract-stay-end').value = contract.stayEndDate || '';
+  } else {
+    staySection.classList.remove('visible');
+    document.getElementById('contract-stay-start').value = '';
+    document.getElementById('contract-stay-end').value = '';
+  }
+
+  // Show existing file if any
+  const fileInfo = document.getElementById('contract-uploaded-file-info');
+  const fileName = document.getElementById('contract-uploaded-file-name');
+  if (contract.fileData) {
+    fileInfo.style.display = 'flex';
+    fileName.textContent = contract.fileName || 'ไฟล์แนบเดิม';
+    // Preload existing file into temporary vars via global
+    window._editContractExistingFile = {
+      data: contract.fileData,
+      name: contract.fileName,
+      type: contract.fileType
+    };
+  } else {
+    fileInfo.style.display = 'none';
+    window._editContractExistingFile = null;
+  }
+
+  closeModal('modal-hotel-details');
+  openModal('modal-contract');
+};
   const hotel = hotelsState.find(h => h.id === hotelId);
   if (!hotel) return;
   
@@ -1841,6 +1947,10 @@ window.editHotel = function(hotelId) {
 
 // Delete Hotel
 window.deleteHotelClick = async function(hotelId) {
+  if (!isAdmin()) {
+    showToast('⛔ เฉพาะ Admin เท่านั้นที่สามารถลบโรงแรมได้', true);
+    return;
+  }
   const hotel = hotelsState.find(h => h.id === hotelId);
   if (!hotel) return;
   
@@ -1862,6 +1972,10 @@ window.deleteHotelClick = async function(hotelId) {
 
 // Delete Location
 window.deleteLocationClick = async function(locId) {
+  if (!isAdmin()) {
+    showToast('⛔ เฉพาะ Admin เท่านั้นที่สามารถลบพื้นที่ได้', true);
+    return;
+  }
   const loc = locationsState.find(l => l.id === locId);
   if (!loc) return;
   
@@ -1876,6 +1990,10 @@ window.deleteLocationClick = async function(locId) {
 
 // Delete Contract
 window.deleteContractClick = async function(contractId, hotelId) {
+  if (!isAdmin()) {
+    showToast('⛔ เฉพาะ Admin เท่านั้นที่สามารถลบสัญญาได้', true);
+    return;
+  }
   if (confirm('คุณแน่ใจว่าต้องการลบสัญญานี้ออกจากระบบใช่หรือไม่?')) {
     await deleteItem('contracts', contractId);
     await refreshState();
