@@ -504,6 +504,24 @@ body {
   background: var(--accent-purple-hover);
 }
 
+/* Renewal status dropdown in alert panel */
+.renewal-status-select {
+  appearance: auto;
+  -webkit-appearance: auto;
+  outline: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.renewal-status-select:hover,
+.renewal-status-select:focus {
+  border-color: var(--accent-purple) !important;
+  outline: none;
+}
+[data-theme="light"] .renewal-status-select {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
 .no-alerts {
   display: flex;
   flex-direction: column;

@@ -742,14 +742,17 @@ function renderDashboardAlerts() {
   }
   
   activeAlerts.forEach(({ contract, hotel, status, daysDiff, endDate }) => {
+    // ซ่อน alert ที่ได้สัญญาแล้ว
+    if (contract.renewalStatus === 'contracted') return;
+
     const item = document.createElement('div');
     const isMain = contract.type === 'main';
     const typeLabel = isMain ? 'สัญญาหลัก' : 'โปรโมชั่น';
-    
+
     let badgeClass = 'warning';
     let alertClass = 'warning';
     let descText = '';
-    
+
     if (status === 'Expired') {
       badgeClass = 'danger';
       alertClass = 'danger';
@@ -757,22 +760,65 @@ function renderDashboardAlerts() {
     } else {
       descText = `หมดอายุในอีก ${daysDiff} วัน (${formatDateThai(endDate)})`;
     }
-    
+
+    // ---- Renewal status config ----
+    const renewalStatus = contract.renewalStatus || 'pending';
+    const RENEWAL_OPTIONS = [
+      { value: 'pending',     label: 'ยังไม่ต่อสัญญา',      dot: '#94a3b8' },
+      { value: 'negotiating', label: 'รอเจรจา',             dot: '#f59e0b' },
+      { value: 'sent',        label: 'ส่งต่อสัญญาแล้ว',     dot: '#06b6d4' },
+      { value: 'contracted',  label: 'ได้สัญญาแล้ว',         dot: '#10b981' },
+    ];
+    const currentOpt = RENEWAL_OPTIONS.find(o => o.value === renewalStatus) || RENEWAL_OPTIONS[0];
+    const optionsHtml = RENEWAL_OPTIONS.map(o =>
+      `<option value="${o.value}"${o.value === renewalStatus ? ' selected' : ''}>${o.label}</option>`
+    ).join('');
+
     item.className = `alert-item ${alertClass}`;
     item.innerHTML = `
-      <div class="alert-content">
-        <div>
+      <div class="alert-content" style="flex:1; min-width:0;">
+        <div style="width:100%;">
           <div class="alert-item-title">${hotel.name}</div>
           <div class="alert-item-desc">${typeLabel} • ${descText}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:7px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${currentOpt.dot};flex-shrink:0;display:inline-block;"></span>
+            <select class="renewal-status-select" data-cid="${contract.id}"
+              style="font-size:11px;padding:3px 8px;height:26px;border-radius:5px;min-width:155px;font-weight:600;color:${currentOpt.dot};background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.13);cursor:pointer;">
+              ${optionsHtml}
+            </select>
+          </div>
         </div>
       </div>
-      <div>
-        <span class="alert-badge ${badgeClass}" style="margin-right:8px;">${status === 'Expired' ? 'หมดอายุ' : 'ใกล้หมด'}</span>
-        <button class="alert-action-btn" onclick="initiateRenewal('${contract.id}')">ต่อสัญญา</button>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;">
+        <span class="alert-badge ${badgeClass}">${status === 'Expired' ? 'หมดอายุ' : 'ใกล้หมด'}</span>
+        <button class="alert-action-btn" onclick="initiateRenewal('${contract.id}')" title="เปิดหน้าต่างเขียนอีเมล">✉️</button>
       </div>
     `;
+
+    // listener เปลี่ยนสถานะ
+    item.querySelector('.renewal-status-select').addEventListener('change', async function() {
+      await updateRenewalStatus(contract.id, this.value);
+    });
+
     alertsContainer.appendChild(item);
   });
+}
+
+// อัปเดตสถานะการต่อสัญญา แล้ว re-render
+async function updateRenewalStatus(contractId, newStatus) {
+  const contract = contractsState.find(c => c.id === contractId);
+  if (!contract) return;
+  contract.renewalStatus = newStatus;
+  await putItem('contracts', contract);
+  await refreshState();
+  renderDashboard();
+  const LABELS = {
+    pending:     'บันทึก: ยังไม่ต่อสัญญา',
+    negotiating: 'บันทึก: รอเจรจา',
+    sent:        'บันทึก: ส่งต่อสัญญาแล้ว',
+    contracted:  'ได้สัญญาแล้ว — ซ่อนการแจ้งเตือนนี้แล้ว ✅',
+  };
+  showToast(LABELS[newStatus] || 'บันทึกสถานะแล้ว');
 }
 
 // Render Hotels List in Directory View
