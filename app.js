@@ -1922,6 +1922,9 @@ window.editContract = function(contractId, hotelId) {
   closeModal('modal-hotel-details');
   openModal('modal-contract');
 };
+
+// Edit Hotel profile
+window.editHotel = function(hotelId) {
   const hotel = hotelsState.find(h => h.id === hotelId);
   if (!hotel) return;
   
