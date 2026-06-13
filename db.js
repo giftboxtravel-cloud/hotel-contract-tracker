@@ -159,7 +159,8 @@ async function getAllItems(storeName) {
       let query = supabaseClient.from(storeName);
       if (storeName === 'contracts') {
         // Exclude fileData to prevent timeout when fetching large base64 strings
-        query = query.select('id, hotelId, type, startDate, endDate, stayStartDate, stayEndDate, baseRate, fileName, fileType, status, renewalStatus');
+        // Also exclude renewalStatus because it might not exist in the Supabase schema yet
+        query = query.select('id, hotelId, type, startDate, endDate, stayStartDate, stayEndDate, baseRate, fileName, fileType, status');
       } else {
         query = query.select('*');
       }
@@ -232,9 +233,15 @@ async function putItem(storeName, data) {
   // Write online if connected
   if (isCloudEnabled()) {
     try {
+      const cloudData = { ...data };
+      if (storeName === 'contracts') {
+        // Remove renewalStatus because it might not exist in the Supabase schema yet
+        delete cloudData.renewalStatus;
+      }
+      
       const { error } = await supabaseClient
         .from(storeName)
-        .upsert(data);
+        .upsert(cloudData);
       
       if (error) {
         console.error(`Supabase write error on ${storeName}:`, error);
