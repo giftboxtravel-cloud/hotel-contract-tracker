@@ -1471,8 +1471,18 @@ function initFormListeners() {
   
   // Submit new/edit contract form
   formContract.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    
+  event.preventDefault();
+
+  if (isSaving) return;
+
+  const submitBtn =
+    formContract.querySelector('button[type="submit"]');
+
+  isSaving = true;
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+
     const contractId = document.getElementById('contract-id').value;
     const hotelId = document.getElementById('contract-hotel-id').value;
     const type = document.getElementById('contract-type').value;
@@ -1481,25 +1491,35 @@ function initFormListeners() {
     const endDate = document.getElementById('contract-end').value;
     const stayStartDate = document.getElementById('contract-stay-start').value;
     const stayEndDate = document.getElementById('contract-stay-end').value;
-    
+
     if (!startDate || !endDate || isNaN(rate)) {
       showToast('กรุณากรอกระยะเวลาสัญญาและราคาเริ่มต้น', true);
       return;
     }
-    
+
     if (startDate > endDate) {
       showToast('วันที่สิ้นสุดสัญญาต้องไม่อยู่ก่อนหน้าวันเริ่มต้น', true);
       return;
     }
 
-    // Resolve file: new upload > existing file (edit mode) > empty
     const existingFile = window._editContractExistingFile;
-    const resolvedFileData = contractAttachedFileBase64 || (existingFile ? existingFile.data : '');
-    const resolvedFileName = contractAttachedFileName || (existingFile ? existingFile.name : '');
-    const resolvedFileType = contractAttachedFileType || (existingFile ? existingFile.type : '');
-    
-    // Preserve renewalStatus if editing
-    const existingContract = contractId ? contractsState.find(c => c.id === contractId) : null;
+
+    const resolvedFileData =
+      contractAttachedFileBase64 ||
+      (existingFile ? existingFile.data : '');
+
+    const resolvedFileName =
+      contractAttachedFileName ||
+      (existingFile ? existingFile.name : '');
+
+    const resolvedFileType =
+      contractAttachedFileType ||
+      (existingFile ? existingFile.type : '');
+
+    const existingContract =
+      contractId
+        ? contractsState.find(c => c.id === contractId)
+        : null;
 
     const contractData = {
       id: contractId || 'contract-' + Date.now(),
@@ -1514,57 +1534,69 @@ function initFormListeners() {
       fileData: resolvedFileData,
       fileType: resolvedFileType,
       status: 'Active',
-      renewalStatus: existingContract ? (existingContract.renewalStatus || 'pending') : 'pending',
+      renewalStatus:
+        existingContract?.renewalStatus || 'pending'
     };
-    
-    await putItem('contracts', contractData);
-    await refreshState();
-    
-    // Reset
+
+    // ==================================================
+    // FIX 1 : Optimistic UI
+    // ==================================================
+    contractsState = contractsState.filter(
+      c => c.id !== contractData.id
+    );
+
+    contractsState.push(contractData);
+
+    renderHotelsList();
+    renderDashboard();
+
+    // ==================================================
+    // FIX 2 : Background Save
+    // ==================================================
+    putItem('contracts', contractData)
+      .then(refreshContracts)
+      .catch(err => {
+        console.error(err);
+        showToast('บันทึก Cloud ไม่สำเร็จ', true);
+      });
+
+    // Reset Form
     formContract.reset();
     contractAttachedFileBase64 = null;
     contractAttachedFileName = null;
     contractAttachedFileType = null;
     window._editContractExistingFile = null;
-    document.getElementById('contract-uploaded-file-info').style.display = 'none';
-    document.getElementById('stay-date-section').classList.remove('visible');
-    document.getElementById('contract-modal-title').textContent = 'สร้างสัญญาค่าห้องพักใหม่';
+
+    document.getElementById(
+      'contract-uploaded-file-info'
+    ).style.display = 'none';
+
+    document.getElementById(
+      'stay-date-section'
+    ).classList.remove('visible');
+
+    document.getElementById(
+      'contract-modal-title'
+    ).textContent = 'สร้างสัญญาค่าห้องพักใหม่';
+
     document.getElementById('contract-id').value = '';
-    
+
     closeModal('modal-contract');
-    renderHotelsList();
-    renderDashboard();
-    
-    showToast(contractId ? 'อัปเดตสัญญาห้องพักสำเร็จ!' : 'สร้างสัญญาค่าห้องพักใหม่เข้าระบบสำเร็จ!');
-  });
-  
-  // 4. Form: Settings
-  const formSettings = document.getElementById('form-settings');
-  
-  // Company doc upload listener
-  const settingsDropzone = document.getElementById('company-doc-dropzone');
-  const settingsFileInput = document.getElementById('set-company-file');
-  
-  settingsFileInput.addEventListener('change', (e) => {
-    handleSettingsDocUpload(e.target.files[0]);
-  });
-  
-  settingsDropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    settingsDropzone.style.borderColor = 'var(--accent-purple)';
-  });
-  
-  settingsDropzone.addEventListener('dragleave', () => {
-    settingsDropzone.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-  });
-  
-  settingsDropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    settingsDropzone.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-    if (e.dataTransfer.files.length > 0) {
-      handleSettingsDocUpload(e.dataTransfer.files[0]);
+
+    showToast(
+      contractId
+        ? 'อัปเดตสัญญาห้องพักสำเร็จ!'
+        : 'สร้างสัญญาค่าห้องพักใหม่เข้าระบบสำเร็จ!'
+    );
+
+  } finally {
+    isSaving = false;
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
     }
-  });
+  }
+});
   
   function handleSettingsDocUpload(file) {
     if (!file) return;
