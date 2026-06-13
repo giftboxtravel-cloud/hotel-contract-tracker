@@ -1585,6 +1585,7 @@ formContract.addEventListener('submit', async (event) => {
     document.getElementById('contract-id').value = '';
 
     closeModal('modal-contract');
+    viewHotelDetails(hotelId);
 
     showToast(
       contractId
