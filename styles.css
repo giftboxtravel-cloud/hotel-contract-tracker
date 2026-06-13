@@ -12,11 +12,11 @@
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   
-  /* Accent Colors */
-  --accent-purple: #8b5cf6;
-  --accent-blue: #06b6d4;
-  --accent-blue-hover: #0891b2;
-  --accent-purple-hover: #7c3aed;
+  /* Accent Colors - Giftbox Red */
+  --accent-purple: #e53935;
+  --accent-blue: #ff7043;
+  --accent-blue-hover: #f4511e;
+  --accent-purple-hover: #d32f2f;
   
   /* Status Colors */
   --color-success: #10b981;
@@ -141,6 +141,8 @@ body {
   background: linear-gradient(135deg, #fff 50%, var(--text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.6;
+  padding: 4px 0;
 }
 
 .sidebar-subtitle {
@@ -1318,6 +1320,8 @@ tr:hover td {
   background: linear-gradient(135deg, #fff 50%, var(--text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.6;
+  padding: 4px 0;
 }
 
 .login-subtitle {

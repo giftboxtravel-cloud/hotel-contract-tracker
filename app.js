@@ -31,8 +31,11 @@ const CURRENT_DATE = new Date('2026-06-05');
 
 // Account definitions — Admin can delete; Operator cannot
 const ACCOUNTS = [
-  { username: 'admin',    passwordKey: 'pw_admin_v3',    defaultPw: 'giftbox2026',  role: 'admin' },
-  { username: 'operator', passwordKey: 'pw_operator_v3', defaultPw: 'giftbox0p3r', role: 'operator' },
+  { username: 'admin',     passwordKey: 'pw_admin_v3', defaultPw: 'giftbox2026',  role: 'admin' },
+  { username: 'operator1', passwordKey: 'pw_op1_v3',   defaultPw: 'giftbox0p3r', role: 'operator' },
+  { username: 'operator2', passwordKey: 'pw_op2_v3',   defaultPw: 'giftbox0p3r', role: 'operator' },
+  { username: 'operator3', passwordKey: 'pw_op3_v3',   defaultPw: 'giftbox0p3r', role: 'operator' },
+  { username: 'operator4', passwordKey: 'pw_op4_v3',   defaultPw: 'giftbox0p3r', role: 'operator' },
 ];
 
 // Clear any stale password keys from previous versions
