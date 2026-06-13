@@ -1557,8 +1557,9 @@ formContract.addEventListener('submit', async (event) => {
     // ==================================================
     // FIX 2 : Background Save
     // ==================================================
+    // ==================================================
     putItem('contracts', contractData)
-      .then(refreshContracts)
+      .then(refreshState)
       .catch(err => {
         console.error(err);
         showToast('บันทึก Cloud ไม่สำเร็จ', true);
