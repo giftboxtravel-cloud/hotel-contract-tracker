@@ -1473,6 +1473,7 @@ function initFormListeners() {
   });
   
   // Submit new/edit contract form
+  let isSaving = false;
 formContract.addEventListener('submit', async (event) => {
   event.preventDefault();
 
