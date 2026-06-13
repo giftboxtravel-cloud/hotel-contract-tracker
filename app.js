@@ -1880,8 +1880,8 @@ window.viewHotelDetails = function(hotelId) {
         statusBadge = `<span class="badge badge-warning">ใกล้หมดอายุ</span>`;
       }
       
-      const fileLink = contract.fileData 
-        ? `<button class="btn btn-secondary btn-icon" onclick="viewBase64File('${contract.fileData}', '${contract.fileName}')" title="ดูไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>`
+      const fileLink = contract.fileName 
+        ? `<button class="btn btn-secondary btn-icon" onclick="openContractFile('${contract.id}', '${contract.fileName}')" title="ดูไฟล์แนบสัญญา"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>`
         : `<span style="font-size:11px;color:var(--text-muted);">ไม่มีไฟล์แนบ</span>`;
 
       const editBtn = `<button class="btn btn-secondary btn-icon" onclick="editContract('${contract.id}', '${hotel.id}')" title="แก้ไขสัญญา" style="color:var(--accent-blue);">
@@ -1983,7 +1983,7 @@ window.viewHotelDetails = function(hotelId) {
 };
 
 // Edit existing Contract
-window.editContract = function(contractId, hotelId) {
+window.editContract = async function(contractId, hotelId) {
   const contract = contractsState.find(c => c.id === contractId);
   const hotel = hotelsState.find(h => h.id === hotelId);
   if (!contract || !hotel) return;
@@ -2015,12 +2015,19 @@ window.editContract = function(contractId, hotelId) {
   // Show existing file if any
   const fileInfo = document.getElementById('contract-uploaded-file-info');
   const fileName = document.getElementById('contract-uploaded-file-name');
-  if (contract.fileData) {
+  if (contract.fileName) {
     fileInfo.style.display = 'flex';
     fileName.textContent = contract.fileName || 'ไฟล์แนบเดิม';
-    // Preload existing file into temporary vars via global
+    
+    // Fetch fileData on demand if not present
+    let fData = contract.fileData;
+    if (!fData) {
+        showToast('กำลังเตรียมไฟล์แนบเดิม...', false);
+        fData = await getContractFileData(contract.id);
+    }
+    
     window._editContractExistingFile = {
-      data: contract.fileData,
+      data: fData,
       name: contract.fileName,
       type: contract.fileType
     };
@@ -2310,6 +2317,24 @@ window.viewBase64File = function(base64Data, filename) {
 window.closeFileViewer = function() {
   document.getElementById('file-viewer-overlay').classList.remove('active');
   document.getElementById('file-viewer-content').innerHTML = '';
+};
+
+// Open contract file by ID fetching data on demand
+window.openContractFile = async function(contractId, fileName) {
+  const contract = contractsState.find(c => c.id === contractId);
+  if (contract && contract.fileData) {
+    viewBase64File(contract.fileData, fileName);
+    return;
+  }
+  
+  showToast('กำลังโหลดข้อมูลไฟล์...', false);
+  const fileData = await getContractFileData(contractId);
+  if (fileData) {
+    if (contract) contract.fileData = fileData; // Cache it
+    viewBase64File(fileData, fileName);
+  } else {
+    showToast('ไม่สามารถโหลดไฟล์สัญญาได้', true);
+  }
 };
 
 // ============================================================

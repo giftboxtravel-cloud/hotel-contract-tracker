@@ -156,9 +156,15 @@ async function getItem(storeName, key) {
 async function getAllItems(storeName) {
   if (isCloudEnabled()) {
     try {
-      const { data, error } = await supabaseClient
-        .from(storeName)
-        .select('*');
+      let query = supabaseClient.from(storeName);
+      if (storeName === 'contracts') {
+        // Exclude fileData to prevent timeout when fetching large base64 strings
+        query = query.select('id, hotelId, type, startDate, endDate, stayStartDate, stayEndDate, baseRate, fileName, fileType, status, renewalStatus');
+      } else {
+        query = query.select('*');
+      }
+      
+      const { data, error } = await query;
       
       if (!error && data) {
         return data;
@@ -178,6 +184,35 @@ async function getAllItems(storeName) {
         request.onerror = () => reject(request.error);
       })
       .catch(reject);
+  });
+}
+
+// Fetch only fileData for a specific contract
+async function getContractFileData(key) {
+  if (isCloudEnabled()) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('contracts')
+        .select('fileData')
+        .eq('id', key)
+        .maybeSingle();
+      if (!error && data) {
+        return data.fileData;
+      }
+    } catch (e) {
+      console.warn('Supabase fetch file failed:', e);
+    }
+  }
+  
+  // Local Fallback
+  return new Promise((resolve, reject) => {
+    getStore('contracts')
+      .then((store) => {
+        const request = store.get(key);
+        request.onsuccess = () => resolve(request.result?.fileData || null);
+        request.onerror = () => resolve(null);
+      })
+      .catch(() => resolve(null));
   });
 }
 
