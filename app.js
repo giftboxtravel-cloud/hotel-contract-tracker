@@ -724,8 +724,14 @@ function renderDashboardAlerts() {
     }
   });
   
-  // Sort alerts: Expired first, then Expiring soonest (lowest daysDiff)
+  // Sort alerts: Pending first, then Expired, then Expiring soonest (lowest daysDiff)
   activeAlerts.sort((a, b) => {
+    const aPending = (a.contract.renewalStatus || 'pending') === 'pending';
+    const bPending = (b.contract.renewalStatus || 'pending') === 'pending';
+    
+    if (aPending && !bPending) return -1;
+    if (!aPending && bPending) return 1;
+
     if (a.status === 'Expired' && b.status !== 'Expired') return -1;
     if (a.status !== 'Expired' && b.status === 'Expired') return 1;
     return a.daysDiff - b.daysDiff;
@@ -777,6 +783,19 @@ function renderDashboardAlerts() {
       `<option value="${o.value}"${o.value === renewalStatus ? ' selected' : ''}>${o.label}</option>`
     ).join('');
 
+    const actionTaker = contract.actionTaker || '';
+    const actionDate = contract.actionDate || '';
+    let checklistHtml = '';
+    
+    if (renewalStatus !== 'pending') {
+      checklistHtml = `
+        <div style="display:flex; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.1);">
+          <input type="text" class="action-taker-input" data-cid="${contract.id}" placeholder="ผู้ดำเนินการ" value="${actionTaker}" title="ชื่อผู้ดำเนินการ" style="flex:1; font-size:11px; padding:4px 6px; border-radius:4px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.2); color:#fff; width: 0;">
+          <input type="date" class="action-date-input" data-cid="${contract.id}" value="${actionDate}" title="วันที่ดำเนินการ" style="flex:1; font-size:11px; padding:4px 6px; border-radius:4px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.2); color:#fff; width: 0;">
+        </div>
+      `;
+    }
+
     item.className = `alert-item ${alertClass}`;
     item.innerHTML = `
       <div class="alert-content" style="flex:1; min-width:0;">
@@ -790,6 +809,7 @@ function renderDashboardAlerts() {
               ${optionsHtml}
             </select>
           </div>
+          ${checklistHtml}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;">
@@ -803,6 +823,18 @@ function renderDashboardAlerts() {
       await updateRenewalStatus(contract.id, this.value);
     });
 
+    const takerInput = item.querySelector('.action-taker-input');
+    const dateInput = item.querySelector('.action-date-input');
+    
+    if (takerInput && dateInput) {
+      takerInput.addEventListener('change', async function() {
+        await updateActionChecklist(contract.id, this.value, dateInput.value);
+      });
+      dateInput.addEventListener('change', async function() {
+        await updateActionChecklist(contract.id, takerInput.value, this.value);
+      });
+    }
+
     alertsContainer.appendChild(item);
   });
 }
@@ -811,6 +843,17 @@ function renderDashboardAlerts() {
 async function updateRenewalStatus(contractId, newStatus) {
   const contract = contractsState.find(c => c.id === contractId);
   if (!contract) return;
+  
+  // Auto-fill checklist fields if changing from pending
+  if ((contract.renewalStatus || 'pending') === 'pending' && newStatus !== 'pending' && newStatus !== 'contracted') {
+    contract.actionTaker = sessionStorage.getItem('username') || getCurrentRole();
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    contract.actionDate = `${yyyy}-${mm}-${dd}`;
+  }
+  
   contract.renewalStatus = newStatus;
   await putItem('contracts', contract);
   await refreshState();
@@ -822,6 +865,17 @@ async function updateRenewalStatus(contractId, newStatus) {
     contracted:  'ได้สัญญาแล้ว — ซ่อนการแจ้งเตือนนี้แล้ว ✅',
   };
   showToast(LABELS[newStatus] || 'บันทึกสถานะแล้ว');
+}
+
+// อัปเดตข้อมูลผู้ดำเนินการและวันที่ในเช็คลิสต์
+async function updateActionChecklist(contractId, taker, date) {
+  const contract = contractsState.find(c => c.id === contractId);
+  if (!contract) return;
+  contract.actionTaker = taker;
+  contract.actionDate = date;
+  await putItem('contracts', contract);
+  await refreshState();
+  showToast('บันทึกข้อมูลเช็คลิสต์แล้ว');
 }
 
 // Render Hotels List in Directory View
