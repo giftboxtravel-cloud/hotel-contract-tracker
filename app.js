@@ -463,17 +463,23 @@ function getHotelActiveRates(hotelId) {
   
   const curDateStr = CURRENT_DATE.toISOString().split('T')[0];
   
-  // 1. Find active promotion first (Promotions take precedence for selling/pricing)
-  const activePromo = hotelContracts.find(c => 
+  // 1. Find active promotions and select the one with the lowest baseRate
+  const activePromos = hotelContracts.filter(c => 
     c.type === 'promo' && 
     c.endDate >= curDateStr
   );
+  const activePromo = activePromos.length > 0 
+    ? activePromos.reduce((min, p) => p.baseRate < min.baseRate ? p : min, activePromos[0])
+    : undefined;
   
-  // 2. Find active main contract
-  const activeMain = hotelContracts.find(c => 
+  // 2. Find active main contracts and select the one with the lowest baseRate
+  const activeMains = hotelContracts.filter(c => 
     c.type === 'main' && 
     c.endDate >= curDateStr
   );
+  const activeMain = activeMains.length > 0
+    ? activeMains.reduce((min, p) => p.baseRate < min.baseRate ? p : min, activeMains[0])
+    : undefined;
   
   return {
     activePromoRate: activePromo ? activePromo.baseRate : null,
