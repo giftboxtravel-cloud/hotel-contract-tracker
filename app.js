@@ -466,14 +466,12 @@ function getHotelActiveRates(hotelId) {
   // 1. Find active promotion first (Promotions take precedence for selling/pricing)
   const activePromo = hotelContracts.find(c => 
     c.type === 'promo' && 
-    c.startDate <= curDateStr && 
     c.endDate >= curDateStr
   );
   
   // 2. Find active main contract
   const activeMain = hotelContracts.find(c => 
     c.type === 'main' && 
-    c.startDate <= curDateStr && 
     c.endDate >= curDateStr
   );
   
