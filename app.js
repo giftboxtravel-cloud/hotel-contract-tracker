@@ -248,6 +248,7 @@ CREATE POLICY "Allow anon delete" ON settings FOR DELETE TO anon USING (true);
 `;
 
 // Global Application State
+let currentDashStatFilter = 'all';
 let locationsState = [];
 let hotelsState = [];
 let contractsState = [];
@@ -595,6 +596,21 @@ function initFilterListeners() {
   });
 }
 
+window.setDashStatFilter = function(filterVal) {
+  currentDashStatFilter = filterVal;
+  
+  // Update UI for active card
+  document.querySelectorAll('.stat-card').forEach(card => {
+    if (card.getAttribute('data-stat-filter') === filterVal) {
+      card.classList.add('active-stat-filter');
+    } else {
+      card.classList.remove('active-stat-filter');
+    }
+  });
+  
+  renderDashboard();
+}
+
 // Render Dashboard View
 function renderDashboard() {
   const filterProv = document.getElementById('dash-filter-province').value;
@@ -624,13 +640,18 @@ function renderDashboard() {
       activeContractsCount++;
     }
     
+    let isExpiring = false;
+    let isExpired = false;
+
     // Calculate alert tallies from all contracts of this hotel
     contracts.forEach(contract => {
       const status = calculateContractStatus(contract);
       if (status === 'Expiring') {
         expiringSoonCount++;
+        isExpiring = true;
       } else if (status === 'Expired') {
         expiredCount++;
+        isExpired = true;
       }
     });
     
@@ -639,7 +660,10 @@ function renderDashboard() {
     return {
       hotel,
       rates,
-      hasPromoActive
+      hasPromoActive,
+      hasActiveContract: !!activeMainContract,
+      isExpiring,
+      isExpired
     };
   });
   
@@ -649,6 +673,15 @@ function renderDashboard() {
     displayedRows = displayedRows.filter(r => r.hasPromoActive);
   } else if (filterPromo === 'no_promo') {
     displayedRows = displayedRows.filter(r => !r.hasPromoActive);
+  }
+
+  // Apply Stat Card Filter
+  if (currentDashStatFilter === 'active') {
+    displayedRows = displayedRows.filter(r => r.hasActiveContract);
+  } else if (currentDashStatFilter === 'expiring') {
+    displayedRows = displayedRows.filter(r => r.isExpiring);
+  } else if (currentDashStatFilter === 'expired') {
+    displayedRows = displayedRows.filter(r => r.isExpired);
   }
   
   // Update general dashboard stats counter (using all contracts in scope of filtered hotels)
