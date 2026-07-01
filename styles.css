@@ -668,6 +668,24 @@ tr:hover td {
   background: rgba(255, 255, 255, 0.015);
 }
 
+/* Sticky Action Column */
+th:last-child, td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 10;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+}
+th:last-child {
+  background: #182035;
+  z-index: 11;
+}
+td:last-child {
+  background: #121829;
+}
+tr:hover td:last-child {
+  background: #1a2238;
+}
+
 .hotel-name-cell {
   font-weight: 600;
 }
@@ -1819,6 +1837,15 @@ tr:hover td {
   color: #1e293b;
 }
 [data-theme="light"] table tr:hover td {
+  background: #f8fafc;
+}
+[data-theme="light"] table th:last-child {
+  background: #f1f5f9;
+}
+[data-theme="light"] table td:last-child {
+  background: #ffffff;
+}
+[data-theme="light"] table tr:hover td:last-child {
   background: #f8fafc;
 }
 [data-theme="light"] .input-custom,
