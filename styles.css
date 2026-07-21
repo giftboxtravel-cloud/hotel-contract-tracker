@@ -1985,3 +1985,7 @@ tr:hover td:last-child {
 [data-theme="light"] .no-alerts {
   color: #64748b;
 }
+[data-theme="light"] .contract-timeline-file {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
