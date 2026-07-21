@@ -1977,17 +1977,17 @@ window.viewHotelDetails = function(hotelId) {
       }
       
       const fileDisplay = contract.fileName 
-        ? `<div class="contract-timeline-file" style="margin-top:10px; padding:8px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-             <div style="display:flex; align-items:center; gap:8px; min-width:0; overflow:hidden;">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--accent-blue);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-               <span style="font-size:12px; font-weight:600; color:var(--text-primary); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${contract.fileName}">📄 ${contract.fileName}</span>
+        ? `<div class="contract-timeline-file" title="${contract.fileName}" style="margin-top:8px; padding:6px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:default;">
+             <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1; overflow:hidden;">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--accent-blue);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+               <span style="font-size:10.5px; font-weight:500; color:var(--text-primary); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block; min-width:0;" title="${contract.fileName}">${contract.fileName}</span>
              </div>
-             <button class="btn btn-secondary btn-icon" onclick="openContractFile('${contract.id}', '${contract.fileName}')" title="เปิดดูไฟล์ (${contract.fileName})" style="padding:4px 10px; height:28px; font-size:11px; flex-shrink:0; display:inline-flex; align-items:center; gap:4px;">
-               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+             <button class="btn btn-secondary btn-icon" onclick="openContractFile('${contract.id}', '${contract.fileName}')" title="เปิดดูไฟล์ (${contract.fileName})" style="padding:3px 8px; height:26px; font-size:10.5px; flex-shrink:0; display:inline-flex; align-items:center; gap:4px;">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                <span>ดูไฟล์</span>
              </button>
            </div>`
-        : `<div style="margin-top:8px; font-size:11px; color:var(--text-muted);">📎 ไม่มีไฟล์แนบ</div>`;
+        : `<div style="margin-top:6px; font-size:10.5px; color:var(--text-muted);">📎 ไม่มีไฟล์แนบ</div>`;
 
       const editBtn = isAdmin()
         ? `<button class="btn btn-secondary btn-icon" onclick="editContract('${contract.id}', '${hotel.id}')" title="แก้ไขสัญญา" style="color:var(--accent-blue);">
